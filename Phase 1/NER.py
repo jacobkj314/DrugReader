@@ -17,15 +17,13 @@ nlp = spacy.load("en_core_web_lg")
 ner = nlp.get_pipe("ner")
 
 
-#docFolder = sys.argv[1] #docs
-#ansFolder = sys.argv[2] #anskeys
-docFolder = "../Train"
+docFolder = sys.argv[1] #docs
+ansFolder = sys.argv[2] #anskeys
 
-#labels = list()#this is where we will store the outputted labels
+labels = list()#this is where we will store the outputted labels
 
 TRAIN_DATA = []
-#LABELS = ["ACQUIRED", "ACQBUS", "ACQLOC", "DLRAMT", "PURCHASER", "SELLER", "STATUS"]
-LABELS = []
+LABELS = ["ACQUIRED", "ACQBUS", "ACQLOC", "DLRAMT", "PURCHASER", "SELLER", "STATUS"]
 
 for file in os.listdir(docFolder):#get every document file
     with open(os.path.join(docFolder, file), "r") as doc:#open the document
@@ -93,4 +91,5 @@ with nlp.disable_pipes(*unaffected_pipes):
 
 
 pickle.dump(nlp, open("NER", "wb"))
+
 
