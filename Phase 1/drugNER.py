@@ -1,4 +1,3 @@
-import os
 from xml.etree import ElementTree as ET
 import spacy
 import os
@@ -6,6 +5,7 @@ import random
 from spacy.util import minibatch, compounding
 from spacy.training.example import Example
 import pickle
+import re
 
 #spacy setup
 nlp = spacy.load("en_core_web_lg") 
@@ -18,19 +18,17 @@ LABELS = ["DRUG", "BRAND", "GROUP", "DRUG_N", "O"]
 docFolder = "Train"
 for file in os.listdir(docFolder): #get every training document
     file = os.path.join(docFolder, file)
-    doc = open(file, "r").read()
+    #doc = open(file, "r").read()
     root = ET.parse(file).getroot() #parse document as XML tree
     for sentence in root.iter("sentence"):
         sentenceText = sentence.get("text")
-        #print(sentenceText)
         entities = list()#more containers
         entDict = dict()
 
         for drug in sentence.iter("entity"):
             chars = drug.get("charOffset").split("-")
             start = int(chars[0])
-            end = int(chars[-1])
-            #print("\"" + sentenceText[start:end] + "\"")
+            end = int(chars[-1]) + 1 #add 1 to convert from inclusive- to exclusive-end index
             label = drug.get("type")
             overlapping = False
             for s,e,_ in entities : 
@@ -41,8 +39,8 @@ for file in os.listdir(docFolder): #get every training document
             if not overlapping : 
                 entities.append((start, end, label))
         entDict["entities"] = entities
-        TRAIN_DATA.append((doc, entDict))
-        
+        TRAIN_DATA.append((sentenceText, entDict))
+
 for _, annotations in TRAIN_DATA:
     for ent in annotations.get("entities"):
         ner.add_label(ent[2])
