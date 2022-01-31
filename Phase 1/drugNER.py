@@ -15,24 +15,31 @@ ner = nlp.get_pipe("ner")
 TRAIN_DATA = []
 LABELS = ["DRUG", "BRAND", "GROUP", "DRUG_N", "O"]
 
-docFolder = "../Train"
+docFolder = "Train"
 for file in os.listdir(docFolder): #get every training document
     file = os.path.join(docFolder, file)
     doc = open(file, "r").read()
     root = ET.parse(file).getroot() #parse document as XML tree
     for sentence in root.iter("sentence"):
         sentenceText = sentence.get("text")
-        print(sentenceText)
+        #print(sentenceText)
         entities = list()#more containers
         entDict = dict()
 
         for drug in sentence.iter("entity"):
             chars = drug.get("charOffset").split("-")
             start = int(chars[0])
-            end = int(chars[-1]) + 1
-            print("\"" + sentenceText[start:end] + "\"")
+            end = int(chars[-1])
+            #print("\"" + sentenceText[start:end] + "\"")
             label = drug.get("type")
-            entities.append((start, end, label))
+            overlapping = False
+            for s,e,_ in entities : 
+                if not (start < s and end <= s or start >= e and end > e) :
+                    overlapping = True
+                    print("overlapping")
+                    break
+            if not overlapping : 
+                entities.append((start, end, label))
         entDict["entities"] = entities
         TRAIN_DATA.append((doc, entDict))
         
