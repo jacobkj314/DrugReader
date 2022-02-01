@@ -17,6 +17,8 @@ LABELS = ["DRUG", "BRAND", "GROUP", "DRUG_N", "O"]
 
 docFolder = "Train"
 for file in os.listdir(docFolder): #get every training document
+    if str(file) == "TRAIN":
+        continue
     file = os.path.join(docFolder, file)
     #doc = open(file, "r").read()
     root = ET.parse(file).getroot() #parse document as XML tree
@@ -61,7 +63,7 @@ unaffected_pipes = [pipe for pipe in nlp.pipe_names if pipe not in pipe_exceptio
 with nlp.disable_pipes(*unaffected_pipes):
 
   # Training
-  for iteration in range(40):
+  for iteration in range(25):
     print(iteration)
     # shuufling examples  before every iteration
     random.shuffle(TRAIN_DATA)
