@@ -10,15 +10,17 @@ dev = getDEV()
 def getNER() -> spacy.language.Language:
     return pickle.load(open("NER", "rb")) 
 ner = getNER()
-def extractEntities(sentenceText: str) -> set[tuple[int, int, str]]:
+def extractLabeledEntities(sentenceText: str) -> set[tuple[int, int, str]]:
     entities = set()
     sentence = ner(sentenceText)#convert text to spacy model
     for ent in sentence.ents:
         entities.add((ent.start_char, ent.end_char, ent.label_))
     return entities
+def extractEntities(sentenceText: str) -> list[tuple[int, int]]: #this returns just the entities themselves, in order
+    return sorted({t[:2] for t in extractEntities(sentenceText)}, key = lambda t : t[0])
 
 
-
+"""
 sentenceList = list()
 docFolder = "Dev"
 for file in os.listdir(docFolder): #get every training document
@@ -55,7 +57,7 @@ fscore = (2 * precision * recall)/(precision + recall)
 
 print("Precision:" + str(hits/guesses) + " Recall:" + str(hits/answers))
 print("F-score:" + str(fscore))
-
+"""
 
 
 
