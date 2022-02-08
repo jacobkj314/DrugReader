@@ -1,6 +1,6 @@
 import os
 from xml.etree import ElementTree as ET
-import predict
+import utils
 from spacy import displacy
 
 sentenceList = list()
@@ -17,4 +17,4 @@ for file in os.listdir(docFolder): #get every training document
 
 
 for i in range(3):
-    displacy.serve(predict.ner(sentenceList[i]), style = "dep")
+    displacy.serve(utils.ner(sentenceList[i]), style = "dep")

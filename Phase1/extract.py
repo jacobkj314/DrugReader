@@ -1,5 +1,5 @@
 import sys
-from predict import getNER, detectRelation
+from utils import getNER, detectRelation
 
 #The main spacy model to hold the entities that will be used for extracting drugs
 ner = getNER()
