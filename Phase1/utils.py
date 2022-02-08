@@ -6,10 +6,15 @@ def getNER() -> Language:
     return pickle.load(open("NER", "rb")) 
 ner = getNER()
 
+def getGold(partition: str) -> list[list[tuple[str, list[tuple[int, int, str]], list[tuple[int, int, str]]]]]:
+    return pickle.load(open(partition + "/" + partition.upper(), "rb"))
+
 def detectRelation(first: Span, second: Span, sentence: Span):
     return extractPattern(first, second, sentence)
 
-def extractPattern(first: Span, second: Span, sentence: Span):
+def extractPattern(first: Span, second: Span, sentence: Span) -> str:
+    if second is None:
+        print(sentence)
     #accumulator lists
     path1 = list()
     path2 = list()
