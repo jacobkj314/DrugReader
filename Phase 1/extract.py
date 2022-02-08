@@ -17,7 +17,7 @@ def __main__():
     doc = ner(docText)
 
     #extract all possible relations
-    relations = set()#a container to hold extracted relations
+    relations = list()#a container to hold extracted relations
     for s, sentence in enumerate(doc.sents):#the document is split into sentences
         ents = sentence.ents#spacy extracts the entities
         entCount = len(ents)
@@ -25,7 +25,7 @@ def __main__():
             for second in [ents[j] for j in range(i + 1, entCount, 1)]:
                 relation = detectRelation(first, second, sentence)#each potential pair is compared
                 if relation is not None:
-                    relations.add((first.text, second.text, relation, s))#if there is a relation, add it to the extracted relations
+                    relations.append((first.text, second.text, relation, s))#if there is a relation, add it to the extracted relations
     
     #format and print results
     for first, second, relation, sentence in relations: 
