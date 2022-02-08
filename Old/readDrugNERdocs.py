@@ -6,7 +6,7 @@ def readDrugNER(docFolder : str) -> list[set[tuple[int, int, str]]]:
     docList = list()
 
     for file in os.listdir(docFolder): #get every training document
-        if str(file) == "DEV":#ignore pickled file
+        if str(file) == "TEST":#ignore pickled file
             continue
         file = os.path.join(docFolder, file)
         root = ET.parse(file).getroot() #parse document as XML tree
@@ -23,8 +23,8 @@ def readDrugNER(docFolder : str) -> list[set[tuple[int, int, str]]]:
                 drugList.append((start, end, label))
             for interaction in sentence.iter("pair"):
                 if interaction.get("ddi") == "true":
-                    e1 = interaction.get("e1").split("e")[-1]
-                    e2 = interaction.get("e2").split("e")[-1]
+                    e1 = int(interaction.get("e1").split("e")[-1])
+                    e2 = int(interaction.get("e2").split("e")[-1])
                     first = min(e1, e2)
                     second = max(e1, e2)
                     label = interaction.get("type")
@@ -33,8 +33,8 @@ def readDrugNER(docFolder : str) -> list[set[tuple[int, int, str]]]:
         docList.append(sentenceList)
     return docList
 
-test = readDrugNER("Dev")
+test = readDrugNER("Test")
 print("read test data")
 
-pickle.dump(test, open("Dev/DEV", "wb"))
+pickle.dump(test, open("Test/TEST", "wb"))
 print("dumped test data")
