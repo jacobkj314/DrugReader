@@ -2,15 +2,20 @@ import pickle
 from spacy.language import Language
 from spacy.tokens.span import Span
 
-def getNER() -> Language:
-    return pickle.load(open("NER", "rb")) 
-ner = getNER()
+ner: Language = pickle.load(open("NER", "rb")) 
+
+labels = ["effect", "mechanism", "advise", "int"]
+goldPatterns: dict[str, set[set]] = pickle.load(open("goldPatterns", "rb"))
 
 def getGold(partition: str) -> list[list[tuple[str, list[tuple[int, int, str]], list[tuple[int, int, str]]]]]:
     return pickle.load(open(partition + "/" + partition.upper(), "rb"))
 
 def detectRelation(first: Span, second: Span, sentence: Span):
-    return extractPattern(first, second, sentence)
+    pattern = extractPattern(first, second, sentence)
+    for label in labels:
+        if pattern in goldPatterns[label]:
+            return label
+    return None
 
 def extractPattern(first: Span, second: Span, sentence: Span) -> str:
     if second is None:
