@@ -12,14 +12,13 @@ def getGold(partition: str) -> list[list[tuple[str, list[tuple[int, int, str]], 
 
 def detectRelation(first: Span, second: Span, sentence: Span):
     pattern = extractPattern(first, second, sentence)
+    print(pattern)
     for label in labels:
         if pattern in goldPatterns[label]:
             return label
     return None
 
 def extractPattern(first: Span, second: Span, sentence: Span) -> str:
-    if second is None:
-        print(sentence)
     #accumulator lists
     path1 = list()
     path2 = list()
@@ -40,5 +39,5 @@ def extractPattern(first: Span, second: Span, sentence: Span) -> str:
         i -= 1
     i += 1
     pattern = path1[0:i] + path2[i::-1]
-    return ".".join(pattern)
+    return " ".join(pattern)
 
