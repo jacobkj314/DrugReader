@@ -6,7 +6,8 @@ def extractRelations(docText: str) -> list[tuple[str, str, str, int]]:
     doc = ner(docText)
     #extract all possible relations
     relations = list()#a container to hold extracted relations
-    for s, sentence in enumerate(doc.ents):#the document is split into sentences
+    for s, sentence in enumerate(doc.sents):#the document is split into sentences
+        print(sentence)
         ents = sentence.ents#spacy extracts the entities
         entCount = len(ents)
         for i, first in enumerate(ents):
