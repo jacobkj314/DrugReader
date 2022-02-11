@@ -12,7 +12,6 @@ def getGold(partition: str) -> list[list[tuple[str, list[tuple[int, int, str]], 
 
 def detectRelation(first: Span, second: Span, sentence: Span):
     pattern = extractPattern(first, second, sentence)
-    print(pattern)
     for label in labels:
         if pattern in goldPatterns[label]:
             return label
