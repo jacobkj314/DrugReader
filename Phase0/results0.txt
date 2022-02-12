@@ -1,0 +1,9 @@
+With Labels:
+Precision:  0.441717791411
+Recall:     0.157205240175
+F-score:    0.231884057971
+
+Without Labels:
+Precision:  0.635802469136
+Recall:     0.231460674157
+F-score:    0.339373970346

@@ -1,6 +1,5 @@
 import pickle
 import utils
-from extract import extractRelations
 
 dev = utils.getGold("Dev")
 
@@ -16,7 +15,10 @@ for doc in dev:
         interactions = [(drugs[first], drugs[second], label) for first, second, label in interactions]
         for interaction in interactions:
             actualRelations.add(interaction)
-    extractedRelations = {(first, second, label) for first, second, label, _ in extractRelations(docText)}
+        #for first, second, _ in interactions:
+            #actualRelations.add((first, second))
+    extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelations(docText)}
+    #extractedRelations = {(first, second) for first, second, _, _ in utils.extractRelations(docText)}
 
     answers += len(actualRelations)
     guesses += len(extractedRelations)
