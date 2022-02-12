@@ -33,6 +33,6 @@ if __name__ == "__main__":
     i = .55
     while i < 1.00:
         demo(i)
-        i += .01
+        i += .05
 
 
