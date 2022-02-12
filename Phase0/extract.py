@@ -1,5 +1,5 @@
 import sys
-from utils import ner, detectRelation, extractRelations
+from utils import extractRelations
 
 
 
