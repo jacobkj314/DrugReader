@@ -7,15 +7,27 @@ from scipy import spatial
 from numpy import ndarray, std
 from statistics import mean
 
+thr: float = .65
+vectorType = "end-weighted"
+
 ner: Language = pickle.load(open("NER", "rb")) 
 nlp = spacy.load("en_core_web_lg") #TRYING TO SAVE ON MEMORY BECAUSE MY SCRIPTS KEEP GETTING KILLED
 
 labels = ["effect", "mechanism", "advise", "int"]
-goldVectors: dict[str, list[ndarray]] = pickle.load(open("goldVectors_3-4-end", "rb"))
+endVectors = pickle.load(open("goldVectors_3-4-end", "rb"))
+peakVectors = pickle.load(open("goldVectors_3-4-peak", "rb"))
+uniformVectors = pickle.load(open("goldVectors_1-2", "rb"))
+def goldVectors() -> dict[str, list[ndarray]]:
+    if vectorType == "endWeighted":
+        return endVectors
+    elif vectorType == "peak-weighted":
+        return peakVectors
+    elif vectorType == "uniform-weighted":
+        return uniformVectors
+    else:
+        raise ValueError("invalid vectorType")
 
-thr: float = .65
 
-vectorType = "end-weighted"
 
 def getGold(partition: str) -> list[list[tuple[str, list[tuple[int, int, str]], list[tuple[int, int, str]]]]]:
     return pickle.load(open(partition + "/" + partition.upper(), "rb"))
@@ -72,7 +84,7 @@ def anova(groups: list[tuple[float, float, int]]) -> float: #input tuples of the
 
 def detectRelation1(first: Span, second: Span, sentence: Span):
     vector = extractPattern(first, second, sentence)
-    sims = [meanSdCount([cosine(vector, v) for v in goldVectors[label]]) for label in labels]
+    sims = [meanSdCount([cosine(vector, v) for v in goldVectors()[label]]) for label in labels]
     #_, pWith = stats.f_oneway(sims[0], sims[1], sims[2], sims[3])
     fWith = anova(sims)
     means = [sim[0] for sim in sims]

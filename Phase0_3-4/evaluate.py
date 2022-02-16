@@ -33,14 +33,15 @@ def demo(threshhold: float, vecType: str):
     recall = hits/answers if answers != 0 else 1
     fScore = (2*precision*recall)/(precision + recall) if (precision + recall) != 0 else 0
 
-    print(f"{vecType}{threshhold}, {answers}, {guesses}, {hits}, {precision}, {recall}, {fScore}")
-
+    file = open("results.csv", "a")
+    file.write(f"{vecType}{threshhold}, {answers}, {guesses}, {hits}, {precision}, {recall}, {fScore}\n")
+    file.close()
 
 if __name__ == "__main__":
     for vType in ["peak-weighted", "end-weighted", "uniform-weighted"]:
         i = .50
         while i < 1.00:
-            demo(vType, i)
+            demo(i, vType)
             i += .05
 
 
