@@ -39,6 +39,6 @@ for doc in gold:
             if sentence is not None:#we can extract!
                 #print(drug[one].text + ", " + drug[two].text + ": " + extractPattern(drug[one], drug[two], sentence))
                 pattern = extractPattern(drug[one], drug[two], sentence)
-                patterns[label].append(nlp(pattern).vector)
+                patterns[label].append(pattern)
 
-pickle.dump(patterns, open("goldVectors", "wb"))
+pickle.dump(patterns, open("goldVectors_3-4-2", "wb"))

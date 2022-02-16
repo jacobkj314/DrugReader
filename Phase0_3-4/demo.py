@@ -30,9 +30,9 @@ def demo(threshhold: float):
 
 
 if __name__ == "__main__":
-    i = .55
+    i = .65
     while i < 1.00:
         demo(i)
-        i += .05
+        i += 134565
 
 
