@@ -9,6 +9,7 @@ from statistics import mean
 
 thr: float = .65
 vectorType = "end-weighted"
+removedByAnova = 0
 
 ner: Language = pickle.load(open("NER", "rb")) 
 nlp = spacy.load("en_core_web_lg") #TRYING TO SAVE ON MEMORY BECAUSE MY SCRIPTS KEEP GETTING KILLED
@@ -16,9 +17,9 @@ nlp = spacy.load("en_core_web_lg") #TRYING TO SAVE ON MEMORY BECAUSE MY SCRIPTS 
 labels = ["effect", "mechanism", "advise", "int"]
 endVectors = pickle.load(open("goldVectors_3-4-end", "rb"))
 peakVectors = pickle.load(open("goldVectors_3-4-peak", "rb"))
-uniformVectors = pickle.load(open("goldVectors_1-2", "rb"))
+uniformVectors = pickle.load(open("goldVectors0_1-2", "rb"))
 def goldVectors() -> dict[str, list[ndarray]]:
-    if vectorType == "endWeighted":
+    if vectorType == "end-weighted":
         return endVectors
     elif vectorType == "peak-weighted":
         return peakVectors
@@ -26,6 +27,10 @@ def goldVectors() -> dict[str, list[ndarray]]:
         return uniformVectors
     else:
         raise ValueError("invalid vectorType")
+'''strVectors: dict[str, set[str]] = dict()
+for label in labels:
+    strVectors[label] = [str(l) for l in labels]'''
+
 
 
 
@@ -42,7 +47,7 @@ def extractRelations(docText: str) -> list[tuple[str, str, str, int]]:
         entCount = len(ents)
         for i, first in enumerate(ents):
             for second in [ents[j] for j in range(i + 1, entCount, 1)]:
-                relation = detectRelation1(first, second, sentence)#each potential pair is compared
+                relation = detectRelationAnova(first, second, sentence)#each potential pair is compared
                 if relation is not None:
                     relations.append((first.text, second.text, relation, s))#if there is a relation, add it to the extracted relations
     return relations
@@ -63,7 +68,7 @@ def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, s
             for second in [ents[j] for j in range(i + 1, entCount, 1)]:
                 for sent in sentence.sents:
                     if first.sent == sent and second.sent == sent:
-                        relation = detectRelation1(first, second, sent)#each potential pair is compared
+                        relation = detectRelationAnova(first, second, sent)#each potential pair is compared
                         if relation is not None:
                             relations.append((first.text, second.text, relation, s))#if there is a relation, add it to the extracted relations
     return relations
@@ -82,10 +87,17 @@ def anova(groups: list[tuple[float, float, int]]) -> float: #input tuples of the
     dfWithin = sum([group[2] for group in groups]) - len(groups)
     return (sumSquaresBetween/dfBetween)/(sumSquaresWithin/dfWithin)
 
-def detectRelation1(first: Span, second: Span, sentence: Span):
+'''def detectRelation(first: Span, second: Span, sentence: Span):#DEPRECATED, use detectRelationAnova instead
+        vector = str(extractPattern(first, second, sentence))#kinda hacky, but just turn all the vectors into strings to be able to compare without numpy errors
+        for label in labels:
+            vectors = strVectors[label]
+            if vector in vectors:
+                return label'''
+
+def detectRelationAnova(first: Span, second: Span, sentence: Span):
+    global removedByAnova
     vector = extractPattern(first, second, sentence)
     sims = [meanSdCount([cosine(vector, v) for v in goldVectors()[label]]) for label in labels]
-    #_, pWith = stats.f_oneway(sims[0], sims[1], sims[2], sims[3])
     fWith = anova(sims)
     means = [sim[0] for sim in sims]
     maxMean = max(means)
@@ -93,11 +105,12 @@ def detectRelation1(first: Span, second: Span, sentence: Span):
         for i, _ in enumerate(sims):
             if sims[i][0] == maxMean:
                 del sims[i]
-                #_, pWithout = stats.f_oneway(sims[0], sims[1], sims[2])
-                fWithout = anova(sims)
+                #fWithout = anova(sims)
+                fWithout = -100 #only specifically for testing without ANOVA filter step
                 if fWithout < fWith:
                     return labels[i]
                 else:
+                    removedByAnova += 1
                     break
     return None
 

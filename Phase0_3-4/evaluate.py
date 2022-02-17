@@ -5,6 +5,7 @@ dev = utils.getGold("Dev")
 def demo(threshhold: float, vecType: str):
     utils.thr = threshhold
     utils.vectorType = vecType
+    utils.removedByAnova = 0
 
     answers = 0
     guesses = 0
@@ -34,7 +35,7 @@ def demo(threshhold: float, vecType: str):
     fScore = (2*precision*recall)/(precision + recall) if (precision + recall) != 0 else 0
 
     file = open("results.csv", "a")
-    file.write(f"{vecType}{threshhold}, {answers}, {guesses}, {hits}, {precision}, {recall}, {fScore}\n")
+    file.write(f"{vecType}{threshhold} (NO ANOVA FILTER), {answers}, {guesses}, {hits}, {precision}, {recall}, {fScore}\n")
     file.close()
 
 if __name__ == "__main__":
