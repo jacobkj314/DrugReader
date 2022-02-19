@@ -7,33 +7,31 @@ from numpy import ndarray, std
 from scipy import spatial
 from statistics import mean
 
-thr: float = .65
-vectorType = "end-weighted"
+#architecture parameters
+thr: float = .55
+vectorType = "peak-weighted"
 removedByAnova = 0
 
+#language models
 ner: Language = pickle.load(open("NER", "rb")) 
-nlp = spacy.load("en_core_web_lg") #TRYING TO SAVE ON MEMORY BECAUSE MY SCRIPTS KEEP GETTING KILLED
+nlp = ner #call it nlp when I am using it just for syntax
 
 labels = ["effect", "mechanism", "advise", "int"]
-endVectors = pickle.load(open("goldVectors_3-4-end", "rb"))
-peakVectors = pickle.load(open("goldVectors_3-4-peak", "rb"))
-uniformVectors = pickle.load(open("goldVectors0_1-2", "rb"))
+#endVectors = pickle.load(open("goldVectors_3-4-end", "rb"))
+peakVectors = pickle.load(open("goldVectors_3-4-peak", "rb"))#only loading one set of vectors to save on memory
+#uniformVectors = pickle.load(open("goldVectors0_1-2", "rb"))
 def goldVectors() -> dict[str, list[ndarray]]:
-    if vectorType == "end-weighted":
+    """if vectorType == "end-weighted":
         return endVectors
     elif vectorType == "peak-weighted":
         return peakVectors
     elif vectorType == "uniform-weighted":
         return uniformVectors
     else:
-        raise ValueError("invalid vectorType")
-'''strVectors: dict[str, set[str]] = dict()
-for label in labels:
-    strVectors[label] = [str(l) for l in labels]'''
+        raise ValueError("invalid vectorType")"""
+    return peakVectors
 
-
-
-
+#Helper method to load gold data
 def getGold(partition: str) -> list[list[tuple[str, list[tuple[int, int, str]], list[tuple[int, int, str]]]]]:
     return pickle.load(open(partition + "/" + partition.upper(), "rb"))
 
@@ -87,13 +85,7 @@ def anova(groups: list[tuple[float, float, int]]) -> float: #input tuples of the
     dfWithin = sum([group[2] for group in groups]) - len(groups)
     return (sumSquaresBetween/dfBetween)/(sumSquaresWithin/dfWithin)
 
-'''def detectRelation(first: Span, second: Span, sentence: Span):#DEPRECATED, use detectRelationAnova instead
-        vector = str(extractPattern(first, second, sentence))#kinda hacky, but just turn all the vectors into strings to be able to compare without numpy errors
-        for label in labels:
-            vectors = strVectors[label]
-            if vector in vectors:
-                return label'''
-
+#compares the extracted context vector of the two entities to known gold entities and returns a chosen label
 def detectRelationAnova(first: Span, second: Span, sentence: Span):
     global removedByAnova
     vector = extractPattern(first, second, sentence)
@@ -106,7 +98,6 @@ def detectRelationAnova(first: Span, second: Span, sentence: Span):
             if sims[i][0] == maxMean:
                 del sims[i]
                 fWithout = anova(sims)
-                #fWithout = -100 #only specifically for testing without ANOVA filter step
                 if fWithout < fWith:
                     return labels[i]
                 else:
@@ -114,7 +105,7 @@ def detectRelationAnova(first: Span, second: Span, sentence: Span):
                     break
     return None
 
-
+#Extracts the syntactic pattern joining two entities as a vector
 def extractPattern(first: Span, second: Span, sentence: Span) -> ndarray:
     #accumulator lists
     path1: list[str] = list()

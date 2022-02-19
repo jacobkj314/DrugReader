@@ -21,10 +21,19 @@ def demo(threshhold: float, vecType: str):
             for interaction in interactions:
                 actualRelations.add(interaction)
         #notice that for evaluation, we use the gold entities instead of spacy-extracted entities.
-        extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(doc)}
+        #use this one #extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(doc)}
         #extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelations(docText)}
 
-        print(extractedRelations)
+        utils.vectorType = "peak-weighted"
+        peak = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(doc)}
+        utils.vectorType = "end-weighted"
+        end = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(doc)}
+        utils.vectorType = "uniform-weighted"
+        uniform = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(doc)}
+
+        extractedRelations = peak.intersection(end).union(end.intersection(uniform)).union(uniform.intersection(peak))
+
+        print(extractedRelations, "|", actualRelations)
 
         answers += len(actualRelations)
         guesses += len(extractedRelations)
@@ -35,15 +44,15 @@ def demo(threshhold: float, vecType: str):
     fScore = (2*precision*recall)/(precision + recall) if (precision + recall) != 0 else 0
 
     file = open("results.csv", "a")
-    file.write(f"{vecType}{threshhold} (NO ANOVA FILTER), {answers}, {guesses}, {hits}, {precision}, {recall}, {fScore}\n")
+    file.write(f"Bagged{threshhold}, {answers}, {guesses}, {hits}, {precision}, {recall}, {fScore}\n")
     file.close()
 
 if __name__ == "__main__":
     for vType in ["peak-weighted", "end-weighted", "uniform-weighted"]:
-        i = .50
+        i = .55
         while i < 1.00:
             demo(i, vType)
-            i += .05
+            i += 1
 
 
 
