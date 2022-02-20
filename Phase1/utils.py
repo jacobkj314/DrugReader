@@ -50,10 +50,10 @@ def extractRelations(docText: str) -> list[tuple[str, str, str, int]]:
                     relations.append((first.text, second.text, relation, s))#if there is a relation, add it to the extracted relations
     return relations
 
-def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, str]], list[tuple[int, int, str]]]]) -> list[tuple[str, str, str, int]]:
+def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, str]]]]) -> list[tuple[str, str, str, int]]:
     relations = list()#a container to hold extracted relations
     for s, sentence in enumerate(doc):#the document is split into sentences
-        (sentenceText, drugs, _) = sentence
+        (sentenceText, drugs) = sentence
         ents: list[Span] = list()#container for ents
         sentence = nlp(sentenceText)
         for start, end, _ in drugs:#collect all the ents as Spans

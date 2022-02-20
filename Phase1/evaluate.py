@@ -37,15 +37,16 @@ def evaluate():
         print(i)#print which document we are on
         #docText = " ".join([sentenceText for sentenceText, _, _ in doc])#assemble document - use if not providing gold entities
         actualRelations = set()
+
+        docWithEntities = [(sentenceText, drugChars) for sentenceText, drugChars, _ in doc]
+
         for sentenceText, drugChars, interactions in doc:
             drugs = [sentenceText[start:end] for start, end, _ in drugChars]
             interactions = [(drugs[first], drugs[second], label) for first, second, label in interactions]
             for interaction in interactions:
                 actualRelations.add(interaction)
-        extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(doc)} #use if providing gold entites
+        extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(docWithEntities)} #use if providing gold entites
         #extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelations(docText)} #use if not providing gold entities
-
-        extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(doc)}
 
         print(extractedRelations, "|", actualRelations)
 
@@ -94,7 +95,7 @@ def evaluate():
     #sentence-level evaluations:
     totalAnswers = mechanismAnswers + effectAnswers + adviseAnswers + intAnswers
     totalGuesses = mechanismGuesses + effectGuesses + adviseGuesses + intGuesses
-    totalHits = mechanismHits + effectHits + adviseGuesses + intHits
+    totalHits = mechanismHits + effectHits + adviseHits + intHits
 
     mechanismPrecision = mechanismHits/mechanismGuesses if mechanismGuesses != 0 else 0
     effectPrecision = effectHits/effectGuesses if effectGuesses != 0 else 0
