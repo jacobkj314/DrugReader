@@ -35,18 +35,18 @@ def evaluate():
 
     for i, doc in enumerate(test):
         print(i)#print which document we are on
-        #docText = " ".join([sentenceText for sentenceText, _, _ in doc])#assemble document - use if not providing gold entities
         actualRelations = set()
-
-        docWithEntities = [(sentenceText, drugChars) for sentenceText, drugChars, _ in doc]
-
         for sentenceText, drugChars, interactions in doc:
             drugs = [sentenceText[start:end] for start, end, _ in drugChars]
             interactions = [(drugs[first], drugs[second], label) for first, second, label in interactions]
             for interaction in interactions:
                 actualRelations.add(interaction)
-        extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(docWithEntities)} #use if providing gold entites
-        #extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelations(docText)} #use if not providing gold entities
+        
+        #docWithEntities = [(sentenceText, drugChars) for sentenceText, drugChars, _ in doc]
+        #extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(docWithEntities)} #use if providing gold entites
+        
+        docText = " ".join([sentenceText for sentenceText, _, _ in doc])#assemble document - use if not providing gold entities
+        extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelations(docText)} #use if not providing gold entities
 
         print(extractedRelations, "|", actualRelations)
 
