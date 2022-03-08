@@ -11,16 +11,27 @@ def main():
 
     trainData = pd.DataFrame()#blank 300-column pandas dataframe
 
+    #train on gold vectors
     golds: dict[str, list[ndarray]] = pickle.load(open("goldVectors_3-4-peak", "rb"))#load best vectors from phase1
     for label in ["mechanism", "effect", "advise", "int"]:
-        print(label)
         gold = golds[label]#select which set of gold vectors to look at
+        print(f"{label} ({len(gold)})")
         for vector in gold:
             vector = array([vector])#rotate to row vector
             newData = pd.DataFrame(vector)#create dataFrame
             trainData = pd.concat([trainData, newData], ignore_index = True)#append
             labels.append(label)
 
+    
+    #train on negative vectors
+    negatives = pickle.load(open("negativeVectors-peak", "rb"))
+    print(len(negatives))
+    for vector in negatives[::(49514//(5*4311//4))]:
+        vector = array([vector])#rotate to row vector
+        newData = pd.DataFrame(vector)#create dataFrame
+        trainData = pd.concat([trainData, newData], ignore_index = True)#append
+        labels.append("none")
+        
 
     #v = DictVectorizer(sparse=False)
     #data = v.fit_transform(trainData.to_dict('records'))

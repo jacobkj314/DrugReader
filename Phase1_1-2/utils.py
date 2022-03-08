@@ -19,10 +19,26 @@ removedByAnova = 0
 ner: Language = pickle.load(open("NER", "rb")) 
 nlp = ner #call it nlp when I am using it just for syntax
 
-#classifiers
-v: DictVectorizer
-multiclassifier: LogisticRegression
-(v, multiclassifier) = pickle.load(open("multiclassifier", "rb"))
+#multiclassifier
+#v: DictVectorizer
+multiclassifier: LogisticRegression = pickle.load(open("multiclassifier", "rb"))
+
+#multibinary classifiers
+mechanismClassifier: LogisticRegression = pickle.load(open("mechanismClassifier", "rb"))
+effectClassifier: LogisticRegression = pickle.load(open("effectClassifier", "rb"))
+adviseClassifier: LogisticRegression = pickle.load(open("adviseClassifier", "rb"))
+intClassifier: LogisticRegression = pickle.load(open("intClassifier", "rb"))
+def multibinaryClassify(vector:ndarray) -> set[str]:#helper method to simplify classification
+    result = set()
+    if mechanismClassifier.predict(vector)[0] == "true":
+        result.add("mechanism")
+    if effectClassifier.predict(vector)[0] == "true":
+        result.add("effect")
+    if adviseClassifier.predict(vector)[0] == "true":
+        result.add("advise")
+    if intClassifier.predict(vector)[0] == "true":
+        result.add("int")
+    return result
 
 labels = ["effect", "mechanism", "advise", "int"]
 #endVectors = pickle.load(open("goldVectors_3-4-end", "rb"))
@@ -79,19 +95,7 @@ def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, s
                             relations.append((first.text, second.text, relation, s))#if there is a relation, add it to the extracted relations
     return relations
 
-def cosine(v: ndarray, u: ndarray) -> float:
-    return 1 - spatial.distance.cosine(v, u)
 
-def meanSdCount(values: list[float]) -> tuple[float, float, int]:#output tuples of the form mean, sd, count for the group
-    return mean(values), std(values), len(values)
-
-def anova(groups: list[tuple[float, float, int]]) -> float: #input tuples of the form mean, sd, count for each group
-    meanOfMeans = mean([group[0] for group in groups])
-    sumSquaresBetween = sum([group[2] * (meanOfMeans - group[0])**2 for group in groups])
-    sumSquaresWithin = sum([(group[1]**2) * (group[2] - 1) for group in groups])
-    dfBetween = len(groups) - 1
-    dfWithin = sum([group[2] for group in groups]) - len(groups)
-    return (sumSquaresBetween/dfBetween)/(sumSquaresWithin/dfWithin)
 
 
 def detectRelationMulticlass(first: Span, second: Span, sentence: Span):
@@ -99,28 +103,21 @@ def detectRelationMulticlass(first: Span, second: Span, sentence: Span):
     pattern = array([pattern])#rotate to row vector
     pattern = DataFrame(pattern)#convert to pandas dataframe
     # #pattern = v.transform(pattern)#transform #I think I don't need this line
-    return multiclassifier.predict(pattern)[0]
+    label = multiclassifier.predict(pattern)[0]
+    if label != "none":
+        return label
+
+def detectRelationMultiBinary(first: Span, second: Span, sentence: Span):
+    pattern = extractPattern(first, second, sentence)
+    pattern = array([pattern])#rotate to row vector
+    pattern = DataFrame(pattern)#convert to pandas dataframe
+    # #pattern = v.transform(pattern)#transform #I think I don't need this line
+    predictions = multibinaryClassify(pattern)
+    if len(predictions) == 1:#only select if there is a single one that looks right
+        return predictions.pop()
 
 
-#compares the extracted context vector of the two entities to known gold entities and returns a chosen label
-def detectRelationAnova(first: Span, second: Span, sentence: Span):
-    global removedByAnova
-    vector = extractPattern(first, second, sentence)
-    sims = [meanSdCount([cosine(vector, v) for v in goldVectors()[label]]) for label in labels]
-    fWith = anova(sims)
-    means = [sim[0] for sim in sims]
-    maxMean = max(means)
-    if maxMean > thr:
-        for i, _ in enumerate(sims):
-            if sims[i][0] == maxMean:
-                del sims[i]
-                fWithout = anova(sims)
-                if fWithout < fWith:
-                    return labels[i]
-                else:
-                    removedByAnova += 1
-                    break
-    return None
+
 
 #Extracts the syntactic pattern joining two entities as a vector
 def extractPattern(first: Span, second: Span, sentence: Span) -> ndarray:
@@ -185,4 +182,4 @@ def extractPattern(first: Span, second: Span, sentence: Span) -> ndarray:
 
     return pattern
 
-detectRelation = detectRelationMulticlass #set which detection scheme to use
+detectRelation = detectRelationMultiBinary #set which detection scheme to use

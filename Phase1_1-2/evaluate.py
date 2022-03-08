@@ -153,8 +153,8 @@ def evaluate():
     cumulativeTotalF = (2*cumulativeTotalPrecision*cumulativeTotalRecall)/(cumulativeTotalPrecision + cumulativeTotalRecall) if (cumulativeTotalPrecision + cumulativeTotalRecall) != 0 else 0
 
     print("\tmechP\tmechR\tmechF\teffP\teffR\teffF\tadvP\tadvR\tadvF\tintP\tintR\tintF\ttotP\ttotR\ttotF")
-    print(f"S:\t{mechanismPrecision}\t{mechanismRecall}\t{mechanismF}\t{effectPrecision}\t{effectRecall}\t{effectF}\t{advisePrecision}\t{adviseRecall}\t{adviseF}\t{intPrecision}\t{intRecall}\t{intF}\t{totalPrecision}\t{totalRecall}\t{totalF}")
-    print(f"C:\t{cumulativeMechanismPrecision}\t{cumulativeMechanismRecall}\t{cumulativeMechanismF}\t{cumulativeEffectPrecision}\t{cumulativeEffectRecall}\t{cumulativeEffectF}\t{cumulativeAdvisePrecision}\t{cumulativeAdviseRecall}\t{cumulativeAdviseF}\t{cumulativeIntPrecision}\t{cumulativeIntRecall}\t{cumulativeIntF}\t{cumulativeTotalPrecision}\t{cumulativeTotalRecall}\t{cumulativeTotalF}")
+    print(f"S:\t\t{mechanismPrecision}\t\t{mechanismRecall}\t\t{mechanismF}\t\t{effectPrecision}\t\t{effectRecall}\t\t{effectF}\t\t{advisePrecision}\t\t{adviseRecall}\t\t{adviseF}\t\t{intPrecision}\t\t{intRecall}\t\t{intF}\t\t{totalPrecision}\t\t{totalRecall}\t\t{totalF}")
+    print(f"C:\t\t{cumulativeMechanismPrecision}\t\t{cumulativeMechanismRecall}\t\t{cumulativeMechanismF}\t\t{cumulativeEffectPrecision}\t\t{cumulativeEffectRecall}\t\t{cumulativeEffectF}\t\t{cumulativeAdvisePrecision}\t\t{cumulativeAdviseRecall}\t\t{cumulativeAdviseF}\t\t{cumulativeIntPrecision}\t\t{cumulativeIntRecall}\t\t{cumulativeIntF}\t\t{cumulativeTotalPrecision}\t\t{cumulativeTotalRecall}\t\t{cumulativeTotalF}")
 
 
 if __name__ == "__main__":
