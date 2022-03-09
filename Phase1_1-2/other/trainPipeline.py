@@ -7,7 +7,8 @@ from sklearn.feature_extraction import DictVectorizer
 from numpy import ndarray, array
 
 def main():
-    labels = list()#this is where we will store the outputted labels
+    mainLabels = list()#this is where we will store the outputted labels
+    multiLabels = list()
 
     trainData = pd.DataFrame()#blank 300-column pandas dataframe
 
@@ -20,9 +21,18 @@ def main():
             vector = array([vector])#rotate to row vector
             newData = pd.DataFrame(vector)#create dataFrame
             trainData = pd.concat([trainData, newData], ignore_index = True)#append
-            labels.append("true")
+            mainLabels.append("true")
+            multiLabels.append(label)
 
+    #train and save multimodel
+    data = trainData# #I think I can replace the above line with this one
+
+    train = LogisticRegression(tol = 0.1, random_state=69, solver='sag', verbose=1, n_jobs=-1)
+    train.fit(data, multiLabels)
     
+    pickle.dump(train, open("pipeline-multi", "wb"))
+
+
     #train on negative vectors
     negatives = pickle.load(open("negativeVectors-peak", "rb"))
     print(len(negatives))
@@ -30,7 +40,7 @@ def main():
         vector = array([vector])#rotate to row vector
         newData = pd.DataFrame(vector)#create dataFrame
         trainData = pd.concat([trainData, newData], ignore_index = True)#append
-        labels.append("false")
+        mainLabels.append("false")
         
 
     #v = DictVectorizer(sparse=False)
@@ -38,7 +48,7 @@ def main():
     data = trainData# #I think I can replace the above line with this one
 
     train = LogisticRegression(tol = 0.1, random_state=69, solver='sag', verbose=1, n_jobs=-1)
-    train.fit(data, labels)
+    train.fit(data, mainLabels)
 
     
     pickle.dump(train, open("pipeline-main", "wb"))
