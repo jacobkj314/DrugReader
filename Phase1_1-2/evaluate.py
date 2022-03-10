@@ -42,11 +42,11 @@ def evaluate():
             for interaction in interactions:
                 actualRelations.add(interaction)
         
-        #docWithEntities = [(sentenceText, drugChars) for sentenceText, drugChars, _ in doc]
-        #extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(docWithEntities)} #use if providing gold entites
+        docWithEntities = [(sentenceText, drugChars) for sentenceText, drugChars, _ in doc]
+        extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(docWithEntities)} #use if providing gold entites
         
-        docText = " ".join([sentenceText for sentenceText, _, _ in doc])#assemble document - use if not providing gold entities
-        extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelations(docText)} #use if not providing gold entities
+        #docText = " ".join([sentenceText for sentenceText, _, _ in doc])#assemble document - use if not providing gold entities
+        #extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelations(docText)} #use if not providing gold entities
 
         print(extractedRelations, "|", actualRelations)
 

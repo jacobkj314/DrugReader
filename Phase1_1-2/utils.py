@@ -40,6 +40,10 @@ def multibinaryClassify(vector:ndarray) -> set[str]:#helper method to simplify c
         result.add("int")
     return result
 
+#pipeline classifiers
+pipelineMain: LogisticRegression = pickle.load(open("pipeline-main", "rb"))
+pipelineMulti: LogisticRegression = pickle.load(open("pipeline-multi", "rb"))
+
 labels = ["effect", "mechanism", "advise", "int"]
 #endVectors = pickle.load(open("goldVectors_3-4-end", "rb"))
 peakVectors = pickle.load(open("goldVectors_3-4-peak", "rb"))#only loading one set of vectors to save on memory
@@ -75,7 +79,7 @@ def extractRelations(docText: str) -> list[tuple[str, str, str, int]]:
     return relations
 
 def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, str]]]]) -> list[tuple[str, str, str, int]]:
-    relations = list()#a container to hold extracted relations
+    relations: list[tuple[str, str, str, int]] = list()#a container to hold extracted relations
     for s, sentence in enumerate(doc):#the document is split into sentences
         (sentenceText, drugs) = sentence
         ents: list[Span] = list()#container for ents
@@ -93,6 +97,12 @@ def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, s
                         relation = detectRelation(first, second, sent)#each potential pair is compared
                         if relation is not None:
                             relations.append((first.text, second.text, relation, s))#if there is a relation, add it to the extracted relations
+    
+    for relation in relations:#this makes sure there are no relations between the same entity in case it appears twice in a sentence
+        first, second, _, _ = relation
+        if first.lower() == second.lower():
+            relations.remove(relation)
+    
     return relations
 
 
@@ -116,6 +126,13 @@ def detectRelationMultiBinary(first: Span, second: Span, sentence: Span):
     if len(predictions) == 1:#only select if there is a single one that looks right
         return predictions.pop()
 
+def detectRelationPipeline(first: Span, second: Span, sentence: Span):
+    pattern = extractPattern(first, second, sentence)
+    pattern = array([pattern])#rotate to row vector
+    pattern = DataFrame(pattern)#convert to pandas dataframe
+    # #pattern = v.transform(pattern)#transform #I think I don't need this line
+    if pipelineMain.predict(pattern) == "true":
+        return pipelineMulti.predict(pattern)[0]
 
 
 
