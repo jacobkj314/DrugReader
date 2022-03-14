@@ -2,7 +2,7 @@
 import pickle
 import spacy
 import re
-from utils import getGold, extractPattern
+from utils import getGold, extractPattern2
 
 partition = "Train"
 
@@ -20,7 +20,7 @@ for doc in gold:
             #print("\n" + sentenceText + ":")
         sentenceAsDoc = nlp(sentenceText)
         drug = [sentenceAsDoc.char_span(start, end) for start, end, _ in drugs]
-
+        drugStr = [d.text for d in drug if d is not None]#drugs as text for creating vectors
         golds: list[tuple[int, int]] = [(one, two) for one, two, _ in interactions]
         #start modifications
         for one in range(len(drugs)):
@@ -37,8 +37,8 @@ for doc in gold:
                             break
                     if sentence is not None:#we can extract!
                         #print(drug[one].text + ", " + drug[two].text + ": " + extractPattern(drug[one], drug[two], sentence))
-                        pattern = extractPattern(drug[one], drug[two], sentence)
+                        pattern = extractPattern2(drug[one], drug[two], sentence, drugStr)
                         #print(pattern[0])
                         patterns.append(pattern)
 
-pickle.dump(patterns, open("negativeVectors-peak", "wb"))
+pickle.dump(patterns, open("negativeVectors-peak-minus", "wb"))

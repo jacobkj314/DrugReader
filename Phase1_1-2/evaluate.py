@@ -2,8 +2,10 @@ import utils
 
 test = utils.getGold("Dev")
 
-def evaluate():
+useGold = True
 
+def evaluate():
+    """
     #hold all entities extracted by system
     cumulativeActualMechanisms = set()
     cumulativeActualEffects = set()
@@ -15,7 +17,7 @@ def evaluate():
     cumulativeExtractedEffects = set()
     cumulativeExtractedAdvises = set()
     cumulativeExtractedInts = set()
-
+    """
     #accumulator variables for answers, guesses, and hits in each category
     mechanismAnswers = 0
     mechanismGuesses = 0
@@ -42,11 +44,12 @@ def evaluate():
             for interaction in interactions:
                 actualRelations.add(interaction)
         
-        docWithEntities = [(sentenceText, drugChars) for sentenceText, drugChars, _ in doc]
-        extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(docWithEntities)} #use if providing gold entites
-        
-        #docText = " ".join([sentenceText for sentenceText, _, _ in doc])#assemble document - use if not providing gold entities
-        #extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelations(docText)} #use if not providing gold entities
+        if useGold:
+            docWithEntities = [(sentenceText, drugChars) for sentenceText, drugChars, _ in doc]
+            extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelationsFromGoldEntities(docWithEntities)} #use if providing gold entites
+        else:
+            docText = " ".join([sentenceText for sentenceText, _, _ in doc])#assemble document - use if not providing gold entities
+            extractedRelations = {(first, second, label) for first, second, label, _ in utils.extractRelations(docText)} #use if not providing gold entities
 
         print(extractedRelations, "|", actualRelations)
 
@@ -62,6 +65,7 @@ def evaluate():
         extractedAdvises = {relation for relation in extractedRelations if relation[2] == "advise"}
         extractedInts = {relation for relation in extractedRelations if relation[2] == "int"}
 
+        """
         #add actual relations in cumulative sets
         cumulativeActualMechanisms.update(actualMechanisms)
         cumulativeActualEffects.update(actualEffects)
@@ -73,7 +77,7 @@ def evaluate():
         cumulativeExtractedEffects.update(extractedEffects)
         cumulativeExtractedAdvises.update(extractedAdvises)
         cumulativeExtractedInts.update(extractedInts)
-
+        """
         #update number of correct answers in each category
         mechanismAnswers += len(actualMechanisms)
         effectAnswers += len(actualEffects)
@@ -115,6 +119,7 @@ def evaluate():
     intF = (2*intPrecision*intRecall)/(intPrecision + intRecall) if (intPrecision + intRecall) != 0 else 0
     totalF = (2*totalPrecision*totalRecall)/(totalPrecision + totalRecall) if (totalPrecision + totalRecall) != 0 else 0
 
+    """
     #cumulative evaluations
     cumulativeMechanismAnswers = len(cumulativeActualMechanisms)
     cumulativeEffectAnswers = len(cumulativeActualEffects)
@@ -151,10 +156,11 @@ def evaluate():
     cumulativeAdviseF = (2*cumulativeAdvisePrecision*cumulativeAdviseRecall)/(cumulativeAdvisePrecision + cumulativeAdviseRecall) if (cumulativeAdvisePrecision + cumulativeAdviseRecall) != 0 else 0
     cumulativeIntF = (2*cumulativeIntPrecision*cumulativeIntRecall)/(cumulativeIntPrecision + cumulativeIntRecall) if (cumulativeIntPrecision + cumulativeIntRecall) != 0 else 0
     cumulativeTotalF = (2*cumulativeTotalPrecision*cumulativeTotalRecall)/(cumulativeTotalPrecision + cumulativeTotalRecall) if (cumulativeTotalPrecision + cumulativeTotalRecall) != 0 else 0
-
+    """
+    
     print("\tmechP\tmechR\tmechF\teffP\teffR\teffF\tadvP\tadvR\tadvF\tintP\tintR\tintF\ttotP\ttotR\ttotF")
     print(f"S:\t\t{mechanismPrecision}\t\t{mechanismRecall}\t\t{mechanismF}\t\t{effectPrecision}\t\t{effectRecall}\t\t{effectF}\t\t{advisePrecision}\t\t{adviseRecall}\t\t{adviseF}\t\t{intPrecision}\t\t{intRecall}\t\t{intF}\t\t{totalPrecision}\t\t{totalRecall}\t\t{totalF}")
-    print(f"C:\t\t{cumulativeMechanismPrecision}\t\t{cumulativeMechanismRecall}\t\t{cumulativeMechanismF}\t\t{cumulativeEffectPrecision}\t\t{cumulativeEffectRecall}\t\t{cumulativeEffectF}\t\t{cumulativeAdvisePrecision}\t\t{cumulativeAdviseRecall}\t\t{cumulativeAdviseF}\t\t{cumulativeIntPrecision}\t\t{cumulativeIntRecall}\t\t{cumulativeIntF}\t\t{cumulativeTotalPrecision}\t\t{cumulativeTotalRecall}\t\t{cumulativeTotalF}")
+    #print(f"C:\t\t{cumulativeMechanismPrecision}\t\t{cumulativeMechanismRecall}\t\t{cumulativeMechanismF}\t\t{cumulativeEffectPrecision}\t\t{cumulativeEffectRecall}\t\t{cumulativeEffectF}\t\t{cumulativeAdvisePrecision}\t\t{cumulativeAdviseRecall}\t\t{cumulativeAdviseF}\t\t{cumulativeIntPrecision}\t\t{cumulativeIntRecall}\t\t{cumulativeIntF}\t\t{cumulativeTotalPrecision}\t\t{cumulativeTotalRecall}\t\t{cumulativeTotalF}")
 
 
 if __name__ == "__main__":
