@@ -3,8 +3,7 @@
 import pickle
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.feature_extraction import DictVectorizer
-from numpy import ndarray, array
+from numpy import ndarray
 
 def main():
     labels = list()#this is where we will store the outputted labels
@@ -12,24 +11,24 @@ def main():
     trainData = pd.DataFrame()#blank 300-column pandas dataframe
 
     #train on gold vectors
-    golds: dict[str, list[ndarray]] = pickle.load(open("goldVectors_3-4-peak", "rb"))#load best vectors from phase1
+    golds: dict[str, list[ndarray]] = pickle.load(open("goldVectors-peak-minus", "rb"))#load best vectors from phase1
     for label in ["mechanism", "effect", "advise", "int"]:
         gold = golds[label]#select which set of gold vectors to look at
         print(f"{label} ({len(gold)})")
         for vector in gold:
-            vector = array([vector])#rotate to row vector
-            newData = pd.DataFrame(vector)#create dataFrame
-            trainData = pd.concat([trainData, newData], ignore_index = True)#append
+            #vector = array([vector])#rotate to row vector
+            #newData = pd.DataFrame(vector)#create dataFrame
+            trainData = pd.concat([trainData, vector], ignore_index = True)#append
             labels.append(label)
 
     #"""
     #train on negative vectors
-    negatives = pickle.load(open("negativeVectors-peak", "rb"))
+    negatives = pickle.load(open("negativeVectors-peak-minus", "rb"))
     print(len(negatives))
     for vector in negatives[::(49514//(4*4311//4))]:
-        vector = array([vector])#rotate to row vector
-        newData = pd.DataFrame(vector)#create dataFrame
-        trainData = pd.concat([trainData, newData], ignore_index = True)#append
+        #vector = array([vector])#rotate to row vector
+        #newData = pd.DataFrame(vector)#create dataFrame
+        trainData = pd.concat([trainData, vector], ignore_index = True)#append
         labels.append("none")
     #""" 
 

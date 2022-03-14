@@ -18,9 +18,7 @@ def main():
         gold = golds[label]#select which set of gold vectors to look at
         print(f"{label} ({len(gold)})")
         for vector in gold:
-            vector = array([vector])#rotate to row vector
-            newData = pd.DataFrame(vector)#create dataFrame
-            trainData = pd.concat([trainData, newData], ignore_index = True)#append
+            trainData = pd.concat([trainData, vector], ignore_index = True)#append
             mainLabels.append("true")
             multiLabels.append(label)
 
@@ -37,9 +35,7 @@ def main():
     negatives = pickle.load(open("negativeVectors-peak", "rb"))
     print(len(negatives))
     for vector in negatives[::(49514//(6*4311//4))]:
-        vector = array([vector])#rotate to row vector
-        newData = pd.DataFrame(vector)#create dataFrame
-        trainData = pd.concat([trainData, newData], ignore_index = True)#append
+        trainData = pd.concat([trainData, vector], ignore_index = True)#append
         mainLabels.append("false")
         
 

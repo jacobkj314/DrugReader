@@ -22,9 +22,7 @@ def main():
         gold = golds[label]#select which set of gold vectors to look at
         print(f"{label} ({len(gold)})")
         for vector in gold:
-            vector = array([vector])#rotate to row vector
-            newData = pd.DataFrame(vector)#create dataFrame
-            trainData = pd.concat([trainData, newData], ignore_index = True)#append
+            trainData = pd.concat([trainData, vector], ignore_index = True)#append
             labels.append("true")
         #"""
         #train negative on gold vectors in other categories
@@ -32,18 +30,14 @@ def main():
             if other != label:
                 print(other)
                 for vector in golds[other]:
-                    vector = array([vector])#rotate to row vector
-                    newData = pd.DataFrame(vector)#create dataFrame
-                    trainData = pd.concat([trainData, newData], ignore_index = True)#append
+                    trainData = pd.concat([trainData, vector], ignore_index = True)#append
                     labels.append("false")
         #"""
         #train on negative vectors
         negatives = pickle.load(open("negativeVectors-peak", "rb"))
         print(len(negatives))
         for vector in negatives[::(49514//(9*len(gold)//4))]:
-            vector = array([vector])#rotate to row vector
-            newData = pd.DataFrame(vector)#create dataFrame
-            trainData = pd.concat([trainData, newData], ignore_index = True)#append
+            trainData = pd.concat([trainData, vector], ignore_index = True)#append
             labels.append("false")
         #"""
 

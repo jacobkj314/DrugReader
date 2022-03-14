@@ -77,7 +77,7 @@ def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, s
             for second in [ents[j] for j in range(i + 1, entCount, 1)]:
                 for sent in sentence.sents:
                     if first.sent == sent and second.sent == sent:
-                        relation = detectRelation2(first, second, sent, entsStr)#each potential pair is compared
+                        relation = detectRelation(first, second, sent, entsStr)#each potential pair is compared
                         if relation is not None:
                             relations.append((first.text, second.text, relation, s))#if there is a relation, add it to the extracted relations
                         break
@@ -86,15 +86,8 @@ def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, s
     return relations
 
 
-def detectRelation2(first: Span, second: Span, sentence: Span, ents: list[str]):
-    pattern = extractPattern2(first, second, sentence, ents)
-    pattern = array([pattern])#rotate to row vector
-    pattern = DataFrame(pattern)#convert to pandas dataframe
-    # #pattern = v.transform(pattern)#transform #I think I don't need this line
-    label = multiclassifier.predict(pattern)[0]
-    if label != "none":
-        return label
-def extractPattern2(first: Span, second: Span, sentence: Span, ents: list[str]) -> ndarray:
+
+def extractPattern(first: Span, second: Span, sentence: Span, ents: list[str]) -> ndarray:
     #accumulator lists
     path1: list[str] = list()
     path2: list[str] = list()
@@ -133,105 +126,35 @@ def extractPattern2(first: Span, second: Span, sentence: Span, ents: list[str]) 
     for j in range(path2len):
         pattern += (j+1)/(path2len + 1) * nlp(path2[j]).vector
 
-    return pattern
-
-def detectRelationMulticlass(first: Span, second: Span, sentence: Span):
-    pattern = extractPattern(first, second, sentence)
     pattern = array([pattern])#rotate to row vector
     pattern = DataFrame(pattern)#convert to pandas dataframe
-    # #pattern = v.transform(pattern)#transform #I think I don't need this line
+    return pattern
+
+def detectRelationMulticlass(first: Span, second: Span, sentence: Span, ents: list[str]):
+    pattern = extractPattern(first, second, sentence, ents)
     label = multiclassifier.predict(pattern)[0]
     if label != "none":
         return label
 
-def detectRelationMultiBinary(first: Span, second: Span, sentence: Span):
-    pattern = extractPattern(first, second, sentence)
-    pattern = array([pattern])#rotate to row vector
-    pattern = DataFrame(pattern)#convert to pandas dataframe
-    # #pattern = v.transform(pattern)#transform #I think I don't need this line
+def detectRelationMultiBinary(first: Span, second: Span, sentence: Span, ents: list[str]):
+    pattern = extractPattern(first, second, sentence, ents)
     predictions = multibinaryClassify(pattern)
     if len(predictions) == 1:#only select if there is a single one that looks right
         return predictions.pop()
 
-def detectRelationPipeline(first: Span, second: Span, sentence: Span):
-    pattern = extractPattern(first, second, sentence)
-    pattern = array([pattern])#rotate to row vector
-    pattern = DataFrame(pattern)#convert to pandas dataframe
-    # #pattern = v.transform(pattern)#transform #I think I don't need this line
+def detectRelationPipeline(first: Span, second: Span, sentence: Span, ents: list[str]):
+    pattern = extractPattern(first, second, sentence, ents)
     if pipelineMain.predict(pattern) == "true":
         return pipelineMulti.predict(pattern)[0]
 
 
 
-#Extracts the syntactic pattern joining two entities as a vector
-def extractPattern(first: Span, second: Span, sentence: Span) -> ndarray:
-    #accumulator lists
-    path1: list[str] = list()
-    path2: list[str] = list()
-    #sentence root
-    root = sentence.root
-    #tracing the entities up the dependency tree
-    pointer1 = first.root#first
-    path1.append(pointer1.lemma_)
-    while pointer1 != root:
-        path1.append(pointer1.head.lemma_)
-        pointer1 = pointer1.head
-    pointer2 = second.root#second
-    path2.append(pointer2.lemma_)
-    while pointer2 != root:
-        path2.append(pointer2.head.lemma_)
-        pointer2 = pointer2.head
-    #remove duplicates
-    i = -1
-    while len(path1) >= abs(i) and len(path2) >= abs(i) and path1[i] == path2[i]:
-        i -= 1
-    i += 1 #this is the index of the first node the paths have in common
-
-    peak = path1[i]#"common ancestor" of entities in dependency parse
-    path1 = path1[1:i]#path leading from entity 1 to peak
-    path2 = path2[1:i]#path leading from entity 2 to peak
-
-    pattern = None
-    if vectorType == "peak-weighted":
-        path1len = len(path1)
-        path2len = len(path2)
-
-        #add up the vectors, with the vectors coming further away having more of an influence on the final pattern
-        pattern = nlp(peak).vector
-        for j in range(path1len):
-            pattern += (j+1)/(path1len + 1) * nlp(path1[j]).vector
-        for j in range(path2len):
-            pattern += (j+1)/(path2len + 1) * nlp(path2[j]).vector
-    elif vectorType == "end-weighted":
-        path1 = path1[::-1]
-        path2 = path2[::-1]
-
-        path1len = len(path1)
-        path2len = len(path2)
-
-        #add up the vectors, with the vectors coming further away having less of an influence on the final pattern
-        pattern = nlp(peak).vector / ((path1len if path1len != 0 else 1) * (path2len if path2len != 0 else 1))
-        for j in range(path1len):
-            pattern += (j+1)/(path1len + 1) * nlp(path1[j]).vector
-        for j in range(path2len):
-            pattern += (j+1)/(path2len + 1) * nlp(path2[j]).vector
-    elif vectorType == "uniform-weighted":
-        pattern = nlp(peak).vector
-        for j in path1:
-            pattern += nlp(j).vector
-        for j in path2:
-            pattern += nlp(j).vector
-    else:
-        raise ValueError("invalid vectorType")
-
-    return pattern
 
 
 def filter(relations):
     for relation in relations:#this makes sure there are no relations between the same entity in case it appears twice in a sentence
         first, second, _, _ = relation
         if first.lower() == second.lower():
-            print("DUPLICATE\n"*30)
             relations.remove(relation)
 
 

@@ -2,7 +2,7 @@
 import pickle
 import spacy
 import re
-from utils import getGold, extractPattern2
+from utils import getGold, extractPattern
 
 partition = "Train"
 
@@ -38,7 +38,7 @@ for doc in gold:
                     sentence = s
                     break
             if sentence is not None:#we can extract!
-                pattern = extractPattern2(drug[one], drug[two], sentence, drugStr)
+                pattern = extractPattern(drug[one], drug[two], sentence, drugStr)
                 patterns[label].append(pattern)
 
 pickle.dump(patterns, open("goldVectors-peak-minus", "wb"))
