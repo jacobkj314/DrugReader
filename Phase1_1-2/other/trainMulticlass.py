@@ -25,7 +25,7 @@ def main():
     #train on negative vectors
     negatives = pickle.load(open("negativeVectors-peak-minus", "rb"))
     print(len(negatives))
-    for vector in negatives[::(49514//(4*4311//4))]:
+    for vector in negatives[::(49514//(6*4311//4))]:
         #vector = array([vector])#rotate to row vector
         #newData = pd.DataFrame(vector)#create dataFrame
         trainData = pd.concat([trainData, vector], ignore_index = True)#append

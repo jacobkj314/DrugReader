@@ -6,6 +6,10 @@ from numpy import ndarray, array
 from pandas import DataFrame
 from sklearn.linear_model import LogisticRegression
 
+#architecture parameters:
+maskEntitiesInPath = False
+resolveCollisions = True
+
 #language models
 ner: Language = pickle.load(open("NER", "rb")) 
 nlp = ner #call it nlp when I am using it just for syntax
@@ -113,8 +117,9 @@ def extractPattern(first: Span, second: Span, sentence: Span, ents: list[str]) -
     peak = path1[i]#"common ancestor" of entities in dependency parse
     path1 = path1[1:i]#path leading from entity 1 to peak
     path2 = path2[1:i]#path leading from entity 2 to peak
-    path1 = [point for point in path1 if point not in ents]
-    path2 = [point for point in path2 if point not in ents]
+    if maskEntitiesInPath:
+        path1 = [point for point in path1 if point not in ents]
+        path2 = [point for point in path2 if point not in ents]
 
     
     path1len = len(path1)
@@ -139,8 +144,13 @@ def detectRelationMulticlass(first: Span, second: Span, sentence: Span, ents: li
 def detectRelationMultiBinary(first: Span, second: Span, sentence: Span, ents: list[str]):
     pattern = extractPattern(first, second, sentence, ents)
     predictions = multibinaryClassify(pattern)
-    if len(predictions) == 1:#only select if there is a single one that looks right
-        return predictions.pop()
+    if resolveCollisions:
+        multiAnswer = pipelineMulti.predict(pattern)[0]
+        if multiAnswer in predictions:
+            return multiAnswer
+    else:
+        if len(predictions) == 1:#only select if there is a single one that looks right
+            return predictions.pop()
 
 def detectRelationPipeline(first: Span, second: Span, sentence: Span, ents: list[str]):
     pattern = extractPattern(first, second, sentence, ents)
@@ -159,4 +169,4 @@ def filter(relations):
 
 
 
-detectRelation = detectRelationMulticlass #set which detection scheme to use
+detectRelation = detectRelationMultiBinary #set which detection scheme to use
