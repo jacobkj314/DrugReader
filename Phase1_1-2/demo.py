@@ -1,5 +1,7 @@
+###This is the demo for my CS6390 Phase II submission, Spring 2022
+###Usage: python3 demo.py <filename (use quotes if it includes spaces) OR document text> [-gold <comma-separated gold entities>] [-multiclass OR -multibin [resolve] OR -pipeline]
 import sys
-from utils import nlp, extractRelations, extractRelationsFromGoldEntities
+import utils
 import re
 
 
@@ -12,23 +14,41 @@ def __main__():
     try:
         docText = " ".join(sys.argv[1:])
 
+        #handle architecture parameters
+        if "-multiclass" in sys.argv:
+            parts = docText.split("-multiclass")
+            docText = parts[0].strip()
+            utils.detectRelation = utils.detectRelationMulticlass
+        elif "-multibin" in sys.argv:
+            parts = docText.split("-multibin")
+            docText = parts[0].strip()
+            utils.detectRelation = utils.detectRelationMultiBinary
+            if "ignore" in parts[1]:
+                utils.resolveCollisions = False
+        elif "-pipeline" in sys.argv:
+            parts = docText.split("-pipeline")
+            docText = parts[0].strip()
+            utils.detectRelation = utils.detectRelationPipeline
+
+        #handle gold entities
         if "-gold" in sys.argv:
             parts = docText.split("-gold")
             docText = parts[0].strip()
             goldEntities = parts[1].strip()
 
+        #attempt to read file, if needed
         docText = open(sys.argv[1], "r").read()
     except:
         pass
 
     if goldEntities == "":
-        relations = extractRelations(docText)
+        relations = utils.extractRelations(docText)
     else:
         goldList = [drug.strip() for drug in goldEntities.strip().split(",")]
 
         docWithEntities = list()
 
-        for sentence in nlp(docText).sents:
+        for sentence in utils.nlp(docText).sents:
             sentenceText = sentence.text
             sentenceEntities = list()
             for drug in goldList:
@@ -37,7 +57,7 @@ def __main__():
                     sentenceEntities.append((start, end, "entity")) #user doesn't need to enter what type of entity, because my system doesn't use it anyway
             docWithEntities.append((sentenceText, sentenceEntities))
 
-        relations = extractRelationsFromGoldEntities(docWithEntities)
+        relations = utils.extractRelationsFromGoldEntities(docWithEntities)
 
     #format and print results
     for first, second, relation, sentence in relations: 

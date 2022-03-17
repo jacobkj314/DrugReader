@@ -1,4 +1,4 @@
-#This python script trains the multiclassifer on extracted context vectors using sklearn. Written by Jacob Johnson for CS6390 at the University of Utah, Spring 2022.
+#This python script trains the pipeline classifiers on extracted context vectors using sklearn. Written by Jacob Johnson for CS6390 at the University of Utah, Spring 2022.
 # It is modified from the classifier training script that Lindsay Wilde and I wrote for the final project last semester in CS5340, which in turn was based on the classifier script for the third programming assignment in that class
 import pickle
 import pandas as pd
@@ -13,12 +13,12 @@ def main():
     trainData = pd.DataFrame()#blank 300-column pandas dataframe
 
     #train on gold vectors
-    golds: dict[str, list[ndarray]] = pickle.load(open("goldVectors_3-4-peak", "rb"))#load best vectors from phase1
+    golds: dict[str, list[ndarray]] = pickle.load(open("goldVectors-peak", "rb"))#load best vectors from phase1
     for label in ["mechanism", "effect", "advise", "int"]:
         gold = golds[label]#select which set of gold vectors to look at
         print(f"{label} ({len(gold)})")
         for vector in gold:
-            trainData = pd.concat([trainData, pd.DataFrame(array([vector]))], ignore_index = True)#append
+            trainData = pd.concat([trainData, vector], ignore_index = True)#append
             mainLabels.append("true")
             multiLabels.append(label)
 
@@ -34,8 +34,8 @@ def main():
     #train on negative vectors
     negatives = pickle.load(open("negativeVectors-peak", "rb"))
     print(len(negatives))
-    for vector in negatives[::(49514//(4*4311//4))]:
-        trainData = pd.concat([trainData, pd.DataFrame(array([vector]))], ignore_index = True)#append
+    for vector in negatives[::(49514//4311)]:#get as many negatives as there are total positives, as determined by devset experiments
+        trainData = pd.concat([trainData, vector], ignore_index = True)#append
         mainLabels.append("false")
         
 

@@ -41,4 +41,4 @@ for doc in gold:
                         #print(pattern[0])
                         patterns.append(pattern)
 
-pickle.dump(patterns, open("negativeVectors-peak-minus", "wb"))
+pickle.dump(patterns, open("negativeVectors-peak", "wb"))

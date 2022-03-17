@@ -91,7 +91,7 @@ def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, s
 
 
 
-def extractPattern(first: Span, second: Span, sentence: Span, ents: list[str]) -> ndarray:
+def extractPattern(first: Span, second: Span, sentence: Span, ents: list[str]) -> DataFrame:
     #accumulator lists
     path1: list[str] = list()
     path2: list[str] = list()

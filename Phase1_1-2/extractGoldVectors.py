@@ -41,4 +41,4 @@ for doc in gold:
                 pattern = extractPattern(drug[one], drug[two], sentence, drugStr)
                 patterns[label].append(pattern)
 
-pickle.dump(patterns, open("goldVectors-peak-minus", "wb"))
+pickle.dump(patterns, open("goldVectors-peak", "wb"))

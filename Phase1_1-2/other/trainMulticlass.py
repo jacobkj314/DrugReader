@@ -11,7 +11,7 @@ def main():
     trainData = pd.DataFrame()#blank 300-column pandas dataframe
 
     #train on gold vectors
-    golds: dict[str, list[ndarray]] = pickle.load(open("goldVectors-peak-minus", "rb"))#load best vectors from phase1
+    golds: dict[str, list[ndarray]] = pickle.load(open("goldVectors-peak", "rb"))#load best vectors from phase1
     for label in ["mechanism", "effect", "advise", "int"]:
         gold = golds[label]#select which set of gold vectors to look at
         print(f"{label} ({len(gold)})")
@@ -23,9 +23,9 @@ def main():
 
     #"""
     #train on negative vectors
-    negatives = pickle.load(open("negativeVectors-peak-minus", "rb"))
+    negatives = pickle.load(open("negativeVectors-peak", "rb"))
     print(len(negatives))
-    for vector in negatives[::(49514//(6*4311//4))]:
+    for vector in negatives[::(49514//4311)]:#get as many negatives as there are positives, as determined by experiments on the devset
         #vector = array([vector])#rotate to row vector
         #newData = pd.DataFrame(vector)#create dataFrame
         trainData = pd.concat([trainData, vector], ignore_index = True)#append
