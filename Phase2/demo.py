@@ -1,5 +1,5 @@
 ###This is the demo for my CS6390 Phase II submission, Spring 2022
-###Usage: python3 demo.py <filename (use quotes if it includes spaces) OR document text> [-gold <comma-separated gold entities>] [-multiclass OR -multibin [resolve] OR -pipeline]
+###Usage: python3 demo.py <filename (use quotes if it includes spaces) OR document text> [-gold <comma-separated gold entities>] [-mclass OR -mbin [resolve] OR -pipe]
 import sys
 import utils
 import re
@@ -15,18 +15,18 @@ def __main__():
         docText = " ".join(sys.argv[1:])
 
         #handle architecture parameters
-        if "-multiclass" in sys.argv:
-            parts = docText.split("-multiclass")
+        if "-mclass" in sys.argv:
+            parts = docText.split("-mclass")
             docText = parts[0].strip()
             utils.detectRelation = utils.detectRelationMulticlass
-        elif "-multibin" in sys.argv:
-            parts = docText.split("-multibin")
+        elif "-mbin" in sys.argv:
+            parts = docText.split("-multimbinbin")
             docText = parts[0].strip()
             utils.detectRelation = utils.detectRelationMultiBinary
             if "ignore" in parts[1]:
                 utils.resolveCollisions = False
-        elif "-pipeline" in sys.argv:
-            parts = docText.split("-pipeline")
+        elif "-pipe" in sys.argv:
+            parts = docText.split("-pipe")
             docText = parts[0].strip()
             utils.detectRelation = utils.detectRelationPipeline
 

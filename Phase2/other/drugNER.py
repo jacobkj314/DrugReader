@@ -82,4 +82,4 @@ with nlp.disable_pipes(*unaffected_pipes):
             # # # print("Losses", losses)
 
 
-pickle.dump(nlp, open("NER", "wb"))
+pickle.dump(nlp, open("../../NER", "wb"))

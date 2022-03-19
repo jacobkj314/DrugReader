@@ -49,10 +49,11 @@ def extractRelations(docText: str) -> list[tuple[str, str, str, int]]:
     relations = list()#a container to hold extracted relations
     for s, sentence in enumerate(doc.sents):#the document is split into sentences
         ents = sentence.ents#spacy extracts the entities
+        entsStr = [ent.text for ent in ents]
         entCount = len(ents)
         for i, first in enumerate(ents):
             for second in [ents[j] for j in range(i + 1, entCount, 1)]:
-                relation = detectRelation(first, second, sentence)#each potential pair is compared
+                relation = detectRelation(first, second, sentence, entsStr)#each potential pair is compared
                 if relation is not None:
                     relations.append((first.text, second.text, relation, s))#if there is a relation, add it to the extracted relation
 
