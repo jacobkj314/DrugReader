@@ -6,37 +6,12 @@ from numpy import ndarray, array
 from pandas import DataFrame
 from sklearn.linear_model import LogisticRegression
 
-#architecture parameters:
-maskEntitiesInPath = False
-resolveCollisions = True
-
 #language models
-ner: Language = pickle.load(open("../NER", "rb")) 
+ner: Language = pickle.load(open("NER", "rb")) 
 nlp = ner #call it nlp when I am using it just for syntax
 
 #multiclassifier
-multiclassifier: LogisticRegression = pickle.load(open("models/multiclassifier", "rb"))
-
-#multibinary classifiers
-mechanismClassifier: LogisticRegression = pickle.load(open("models/mechanismClassifier", "rb"))
-effectClassifier: LogisticRegression = pickle.load(open("models/effectClassifier", "rb"))
-adviseClassifier: LogisticRegression = pickle.load(open("models/adviseClassifier", "rb"))
-intClassifier: LogisticRegression = pickle.load(open("models/intClassifier", "rb"))
-def multibinaryClassify(vector:ndarray) -> set[str]:#helper method to simplify classification
-    result = set()
-    if mechanismClassifier.predict(vector)[0] == "true":
-        result.add("mechanism")
-    if effectClassifier.predict(vector)[0] == "true":
-        result.add("effect")
-    if adviseClassifier.predict(vector)[0] == "true":
-        result.add("advise")
-    if intClassifier.predict(vector)[0] == "true":
-        result.add("int")
-    return result
-
-#pipeline classifiers
-pipelineMain: LogisticRegression = pickle.load(open("models/pipeline-main", "rb"))
-pipelineMulti: LogisticRegression = pickle.load(open("models/pipeline-multi", "rb"))
+multiclassifier: LogisticRegression = pickle.load(open("Phase3/models/multiclassifier", "rb"))
 
 #Helper method to load gold data
 def getGold(partition: str) -> list[list[tuple[str, list[tuple[int, int, str]], list[tuple[int, int, str]]]]]:
@@ -114,9 +89,6 @@ def extractPattern(first: Span, second: Span, sentence: Span, ents: list[str]) -
     peak = path1[i]#"common ancestor" of entities in dependency parse
     path1 = path1[1:i]#path leading from entity 1 to peak
     path2 = path2[1:i]#path leading from entity 2 to peak
-    if maskEntitiesInPath:
-        path1 = [point for point in path1 if point not in ents]
-        path2 = [point for point in path2 if point not in ents]
 
     
     path1len = len(path1)
@@ -138,29 +110,56 @@ def detectRelationMulticlass(first: Span, second: Span, sentence: Span, ents: li
     if label != "none":
         return label
 
-def detectRelationMultiBinary(first: Span, second: Span, sentence: Span, ents: list[str]):
-    pattern = extractPattern(first, second, sentence, ents)
-    predictions = multibinaryClassify(pattern)
-    if resolveCollisions:
-        multiAnswer = pipelineMulti.predict(pattern)[0]
-        if multiAnswer in predictions:
-            return multiAnswer
-    else:
-        if len(predictions) == 1:#only select if there is a single one that looks right
-            return predictions.pop()
-
-def detectRelationPipeline(first: Span, second: Span, sentence: Span, ents: list[str]):
-    pattern = extractPattern(first, second, sentence, ents)
-    if pipelineMain.predict(pattern) == "true":
-        return pipelineMulti.predict(pattern)[0]
-
-
-
-
-
 def filter(relations):
     return [(first, second, label, sentence) for first, second, label, sentence in relations if first.lower() != second.lower()]
 
+#This is a helper class I wrote to simplify case-insensitive mention pair encapsulation. It's basically just a wrapper class for a tuple that ignores case and order when compared
+class MentionPair:
+    def __init__(self, one, two):
+        self.one = one
+        self.two = two
+    def __eq__(self, other):
+        if type(other) is not MentionPair:
+            return False
+        return {str(self.one).lower(), str(self.two).lower()} == {str(other.one).lower(), str(other.two).lower()}
+    def __ne__(self, other):
+        return not self == other
+    def __hash__(self):
+        return hash(tuple(sorted([str(self.one).lower(), str(self.two).lower()])))
+    def __str__(self):
+        return str(self.get())
+    def __repr__(self):
+        return repr(self.get())
+    def __getitem__(self, key):
+        return self.get().__getitem__(key)
+    def __iter__(self):
+        return self.get().__iter__()
+    def get(self):
+        return (self.one, self.two)
 
-
-detectRelation = detectRelationMulticlass #set which detection scheme to use by default
+#this is a helper class I wrote to simplify the process of collecting MentionPairs and associating them with sets of DataFrame vectors
+from typing import TypeVar, Generic
+T = TypeVar("T")
+class HashBin(Generic[T]):
+    def __init__(self):
+        self.data: dict[T, set[T]] = dict()
+    def __setitem__(self, key: T, newvalue):#this method is kinda confusing, basically if bin is a HashBin, the line bin[1] = 'a' adds 'a' to the 1 bin, not overwrites it. so I could then write bin[1] = 'b', then call bin[1], which would return {'a','b'}. I couldn't figure out how to make it use += instead
+        bin = self.data.get(key)
+        if bin is None:
+            bin = set()
+            self.data[key] = bin
+        bin.add(newvalue)
+    def __getitem__(self, key: T):
+        bin = self.data.get(key)
+        if bin is None:
+            return {}
+        return bin
+    def __iter__(self):
+        return HashBin.Iter(self)
+    class Iter(Generic[T]):
+        def __init__(self, hashBin):
+            self.data = hashBin.data
+            self.iter = self.data.__iter__()
+        def __next__(self):
+            key = self.iter.__next__()
+            return (key, self.data[key])
