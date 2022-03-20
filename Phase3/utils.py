@@ -17,26 +17,29 @@ multiclassifier: LogisticRegression = pickle.load(open("Phase3/models/multiclass
 def getGold(partition: str) -> list[list[tuple[str, list[tuple[int, int, str]], list[tuple[int, int, str]]]]]:
     return pickle.load(open("../" + partition + "/" + partition.upper(), "rb"))
 
-def extractRelations(docText: str) -> list[tuple[str, str, str, int]]:
+def extractRelations(docText: str) -> list[tuple[str, str, str, int]]:#TODO fix this to work like extractRelationsFromGoldEntities
     #the document is passed into the spacy model to extract drug entities
     doc = ner(docText)
     #extract all possible relations
-    relations = list()#a container to hold extracted relations
     for s, sentence in enumerate(doc.sents):#the document is split into sentences
         ents = sentence.ents#spacy extracts the entities
         entsStr = [ent.text for ent in ents]
         entCount = len(ents)
+        pairBins: HashBin[tuple[Span, Span]] = HashBin()
         for i, first in enumerate(ents):
             for second in [ents[j] for j in range(i + 1, entCount, 1)]:
-                relation = detectRelation(first, second, sentence, entsStr)#each potential pair is compared
-                if relation is not None:
-                    relations.append((first.text, second.text, relation, s))#if there is a relation, add it to the extracted relation
+                #TODO: if first.text.lower() !- second.text.lower()
+                relation = MentionPair(first, second)
+                vector = extractPattern(first, second, sentence, entsStr)
+                pairBins[relation] = vector#add vector to bin
 
-    relations = filter(relations)
+    relations = list()#a container to hold extracted relations
+    for pair, vectors in pairBins:#new part
+        if classify(vectors) is not None:
+            relations.append(pair)#TODO, make this actually "compile" with correct arguments
     return relations
 
 def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, str]]]]) -> list[tuple[str, str, str, int]]:
-    relations: list[tuple[str, str, str, int]] = list()#a container to hold extracted relations
     for s, sentence in enumerate(doc):#the document is split into sentences
         (sentenceText, drugs) = sentence
         ents: list[Span] = list()#container for ents
@@ -49,16 +52,19 @@ def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, s
         entsStr = [ent.text for ent in ents]
 
         entCount = len(ents)
+        pairBins: HashBin[tuple[Span, Span]] = HashBin()
         for i, first in enumerate(ents):
             for second in [ents[j] for j in range(i + 1, entCount, 1)]:
                 for sent in sentence.sents:
-                    if first.sent == sent and second.sent == sent:
-                        relation = detectRelation(first, second, sent, entsStr)#each potential pair is compared
-                        if relation is not None:
-                            relations.append((first.text, second.text, relation, s))#if there is a relation, add it to the extracted relations
-                        break
-
-    relations = filter(relations)
+                    if first.sent == sent and second.sent == sent:#TODO and first.text.lower() != second.text.lower()
+                        relation = MentionPair(first, second)
+                        vector = extractPattern(first, second, sent, entsStr)
+                        pairBins[relation] = vector#add vector to bin
+        
+    relations: list[tuple[str, str, str, int]] = list()#a container to hold extracted relations
+    for pair, vectors in pairBins:
+        if classify(vectors) is not None:
+            relations.append(pair)#TODO, make this actually "compile" with correct arguments
     return relations
 
 
@@ -89,7 +95,6 @@ def extractPattern(first: Span, second: Span, sentence: Span, ents: list[str]) -
     peak = path1[i]#"common ancestor" of entities in dependency parse
     path1 = path1[1:i]#path leading from entity 1 to peak
     path2 = path2[1:i]#path leading from entity 2 to peak
-
     
     path1len = len(path1)
     path2len = len(path2)
@@ -110,8 +115,17 @@ def detectRelationMulticlass(first: Span, second: Span, sentence: Span, ents: li
     if label != "none":
         return label
 
-def filter(relations):
-    return [(first, second, label, sentence) for first, second, label, sentence in relations if first.lower() != second.lower()]
+def classify(vectors: set[DataFrame]):
+    predictions = [multiclassifier.predict(vector)[0] for vector in vectors]#get all predictions
+    predictions = [(predictions.count(prediction), prediction) for prediction in set(predictions)]#find how common each is
+    predictions.sort(key = lambda x : -x[0])#sort
+    predictions = [prediction for prediction in predictions if prediction[0] == predictions[0][0]]#keep only the most common predictions
+    if predictions[0] == "none":
+        del predictions[0]
+    if len(predictions) == 1 or len(predictions) == 2 and predictions[1] == "none":#if there is only a single most predicted prediction that isn't "none"
+        return predictions[0]#return it
+    return None##TODO: IMPLEMENT some collision resolution strategy?
+
 
 #This is a helper class I wrote to simplify case-insensitive mention pair encapsulation. It's basically just a wrapper class for a tuple that ignores case and order when compared
 class MentionPair:
@@ -137,7 +151,7 @@ class MentionPair:
     def get(self):
         return (self.one, self.two)
 
-#this is a helper class I wrote to simplify the process of collecting MentionPairs and associating them with sets of DataFrame vectors
+#this is a helper class I wrote to simplify the process of collecting MentionPairs and associating them with sets of DataFrame vectors. Its basically just a dictionary from a tuple of Spans to a set of DataFrames 
 from typing import TypeVar, Generic
 T = TypeVar("T")
 class HashBin(Generic[T]):
