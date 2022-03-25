@@ -9,10 +9,10 @@ from sklearn.linear_model import LogisticRegression
 #models
 ner: Language = pickle.load(open("NER", "rb")) 
 nlp = ner #call it nlp when I am using it just for syntax
-classifier = pickle.load(open("classifier3", "rb"))
+#classifier = pickle.load(open("classifier3", "rb"))
 
 #vectors
-dependencyVectors = pickle.load(open("dependencyVectors", "rb"))
+dependencyVectors = pickle.load(open("Phase3/vectors/dependencyVectors", "rb"))
 
 
 
@@ -70,46 +70,59 @@ def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, s
 
 
 def pattern(first: Span, second: Span):
+    display = False
+    if MentionPair(first.text,second.text) == MentionPair("ACEI", "ARB"):
+        print([(w, w.i, w.head.i) for w in first.sent])
+        display = True
     #I'm trying to standardize the vectors for paths between entities, so I'm going to put the earlier one alphabetically first, so that all paths between pairs of the same entities can be meaningfully compared
     swapped = 0
     if first.text.lower() > second.text.lower():
         temp = first; first = second; second = temp
         swapped = 1
-
     #find peak
     peak = None
     pointer1 = first.root; path1len = 0#initialize left side of path
     while peak is None: #wait to find a "lowest common dependency ancestor"
         pointer2 = second.root; path2len = 0#initialize right side of path
         while peak is None:
+            if display:
+                print((pointer1, pointer1.dep_), (pointer2, pointer2.dep_))
+                input()
             if pointer1 == pointer2:#when they line up
                 peak = pointer1#that's the peak
-            if pointer2.dep_ == "ROOT":
+            if pointer2.head == pointer2:
                 break
             pointer2 = pointer2.head; path2len += 1 #otherwise, iterate right
-        if pointer1.dep_ == "ROOT":
+        if pointer1.head == pointer1:
             break
         pointer1 = pointer1.head; path1len += 1 #iterate left
     if peak is None:
         raise Exception("No dependency peak found!")
-
+    print("found peak")
     #calculate first side
-    path1 = array([0 for _ in range(300)])
-    dep1 =  array([0 for _ in range(600)])
+    path1 = array([0.0 for _ in range(300)])
+    dep1 =  array([0.0 for _ in range(600)])
     pointer = first.root; height = 0
-    while pointer.head != peak:
+    while pointer != peak and pointer.head != peak:
+        """if height > path1len:
+            print(first.root.i, second.root.i)
+            print([(w, w.i, w.head.i) for w in pointer.sent])
+            input()#using this to debug"""
         path1 += height/path1len * pointer.vector
-        height += 1
-        dep1 += height/path1len * dependencyVectors[pointer.dep]
-
+        pointer = pointer.head; height += 1
+        dep1 += height/path1len * dependencyVectors[pointer.dep_]
     #calculate second side
     path2 = array([0 for _ in range(300)])
     dep2 =  array([0 for _ in range(600)])
     pointer = second.root; height = 0
-    while pointer.head != peak:
+    while pointer != peak and pointer.head != peak:
+        """if height > path2len:
+            print(first.root.i, second.root.i)
+            print([(w, w.i, w.head.i) for w in pointer.sent])
+            input()#using this to debug"""
         path1 += height/path2len * pointer.vector
-        height += 1
-        dep1 += height/path2len * dependencyVectors[pointer.dep]
+        pointer = pointer.head; height += 1
+        dep1 += height/path2len * dependencyVectors[pointer.dep_]
 
     return concatenate(([path1len], path1, dep1, peak.vector, dep2, path2, [path2len], [swapped]))
 

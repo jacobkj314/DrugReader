@@ -26,4 +26,4 @@ count = len(model.classes_)
 vectors = dict()
 for i in range(count):
     vectors[model.classes_[i]] = model.coef_[i]
-pickle.dump(vectors, open("dependencyVectors", "wb"))
+pickle.dump(vectors, open("Phase3/vectors/dependencyVectors", "wb"))
