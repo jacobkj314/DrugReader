@@ -9,7 +9,7 @@ from sklearn.linear_model import LogisticRegression
 #models
 ner: Language = pickle.load(open("NER", "rb")) 
 nlp = ner #call it nlp when I am using it just for syntax
-#classifier = pickle.load(open("classifier3", "rb"))
+classifier = pickle.load(open("Phase3/classifier", "rb"))
 
 #vectors
 dependencyVectors = pickle.load(open("Phase3/vectors/dependencyVectors", "rb"))
@@ -63,17 +63,13 @@ def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, s
     for pair, vectors in pairBins:
         label = classify(vectors)
         if label is not None:
-            relations.append(pair)#TODO, make this actually "compile" with correct arguments
+            relations.append((pair, label))#TODO, make this actually "compile" with correct arguments
     return relations
 
 
 
 
 def pattern(first: Span, second: Span):
-    display = False
-    if MentionPair(first.text,second.text) == MentionPair("ACEI", "ARB"):
-        print([(w, w.i, w.head.i) for w in first.sent])
-        display = True
     #I'm trying to standardize the vectors for paths between entities, so I'm going to put the earlier one alphabetically first, so that all paths between pairs of the same entities can be meaningfully compared
     swapped = 0
     if first.text.lower() > second.text.lower():
@@ -85,9 +81,6 @@ def pattern(first: Span, second: Span):
     while peak is None: #wait to find a "lowest common dependency ancestor"
         pointer2 = second.root; path2len = 0#initialize right side of path
         while peak is None:
-            if display:
-                print((pointer1, pointer1.dep_), (pointer2, pointer2.dep_))
-                input()
             if pointer1 == pointer2:#when they line up
                 peak = pointer1#that's the peak
             if pointer2.head == pointer2:
@@ -98,16 +91,11 @@ def pattern(first: Span, second: Span):
         pointer1 = pointer1.head; path1len += 1 #iterate left
     if peak is None:
         raise Exception("No dependency peak found!")
-    print("found peak")
     #calculate first side
     path1 = array([0.0 for _ in range(300)])
     dep1 =  array([0.0 for _ in range(600)])
     pointer = first.root; height = 0
     while pointer != peak and pointer.head != peak:
-        """if height > path1len:
-            print(first.root.i, second.root.i)
-            print([(w, w.i, w.head.i) for w in pointer.sent])
-            input()#using this to debug"""
         path1 += height/path1len * pointer.vector
         pointer = pointer.head; height += 1
         dep1 += height/path1len * dependencyVectors[pointer.dep_]
@@ -116,10 +104,6 @@ def pattern(first: Span, second: Span):
     dep2 =  array([0 for _ in range(600)])
     pointer = second.root; height = 0
     while pointer != peak and pointer.head != peak:
-        """if height > path2len:
-            print(first.root.i, second.root.i)
-            print([(w, w.i, w.head.i) for w in pointer.sent])
-            input()#using this to debug"""
         path1 += height/path2len * pointer.vector
         pointer = pointer.head; height += 1
         dep1 += height/path2len * dependencyVectors[pointer.dep_]
@@ -131,10 +115,10 @@ def pattern(first: Span, second: Span):
 
 
 def classify(vectors: set[DataFrame]):
-    predictions = [classifier.predict(vector)[0] for vector in vectors]#get all predictions
+    predictions = [classifier.predict([vector])[0] for vector in vectors]#get all predictions
     predictions = [(predictions.count(prediction), prediction) for prediction in set(predictions)]#find how common each is
     predictions.sort(key = lambda x : -x[0])#sort
-    predictions = [prediction for prediction in predictions if prediction[0] == predictions[0][0]]#keep only the most common predictions
+    predictions = [prediction[1] for prediction in predictions if prediction[0] == predictions[0][0]]#keep only the most common predictions
     if predictions[0] == "none":
         del predictions[0]
     if len(predictions) == 1 or len(predictions) == 2 and predictions[1] == "none":#if there is only a single most predicted prediction that isn't "none"
@@ -180,13 +164,13 @@ T = TypeVar("T")
 E = TypeVar("E")
 class HashBin(Mapping[T, set[E]]):
     def __init__(self):
-        self.data: dict[T, set[E]] = dict()
+        self.data: dict[T, list[E]] = dict()
     def __setitem__(self, key: T, newvalue: E) -> None:#this method is kinda confusing, basically if bin is a HashBin, the line bin[1] = 'a' adds 'a' to the 1 bin, not overwrites it. so I could then write bin[1] = 'b', then call bin[1], which would return {'a','b'}. I couldn't figure out how to make it use += instead
-        bin: set[E] = self.data.get(key)
+        bin: list[E] = self.data.get(key)
         if bin is None:
-            bin = set()
+            bin = list()
             self.data[key] = bin
-        bin.add(newvalue)
+        bin.append(newvalue)
     def __getitem__(self, key: T) -> set[E]:
         bin = self.data.get(key)
         if bin is None:
@@ -202,12 +186,14 @@ class HashBin(Mapping[T, set[E]]):
         return self.data.__str__()
     def __repr__(self) -> str:
         return self.data.__repr__()
+    def __len__(self) -> int:
+        return self.data.__len__()
     def __iter__(self):
         return HashBin.Iter(self)
-    class Iter(Generic[T]):
+    class Iter(Generic[T, E]):
         def __init__(self, hashBin):
             self.data = hashBin.data
             self.iter = self.data.__iter__()
-        def __next__(self) -> tuple[T, set[E]]:
+        def __next__(self) -> tuple[T, list[E]]:
             key = self.iter.__next__()
             return (key, self.data[key])
