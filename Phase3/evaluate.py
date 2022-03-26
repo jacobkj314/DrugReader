@@ -5,30 +5,17 @@ import utils
 import sys
 import pickle
 
-#evaluation parameters
-test = pickle.load(open("Dev/DEV", "rb"))
-useGold = True
-
-def evaluate():
+def evaluate(partition = pickle.load(open("Dev/DEV", "rb")), useGold = True, classifier = utils.classifier):
+    #overwrite which classifier to use for this session
+    utils.classifier = classifier
 
     #accumulator variables for answers, guesses, and hits in each category
-    mechanismAnswers = 0
-    mechanismGuesses = 0
-    mechanismHits = 0
+    mechanismAnswers = 0; mechanismGuesses = 0; mechanismHits = 0
+    effectAnswers = 0; effectGuesses = 0; effectHits = 0
+    adviseAnswers = 0; adviseGuesses = 0; adviseHits = 0
+    intAnswers = 0; intGuesses = 0; intHits = 0
 
-    effectAnswers = 0
-    effectGuesses = 0
-    effectHits = 0
-
-    adviseAnswers = 0
-    adviseGuesses = 0
-    adviseHits = 0
-
-    intAnswers = 0
-    intGuesses = 0
-    intHits = 0
-
-    for i, doc in enumerate(test):
+    for i, doc in enumerate(partition):
         print(i)#print which document we are on
         actualRelations = set()
         for sentenceText, drugChars, interactions in doc:
@@ -36,7 +23,7 @@ def evaluate():
             interactions = [(utils.MentionPair(drugs[first], drugs[second]), label) for first, second, label in interactions]
             for interaction in interactions:
                 actualRelations.add(interaction)
-        
+
         if useGold:
             docWithEntities = [(sentenceText, drugChars) for sentenceText, drugChars, _ in doc]
             extractedRelations = {(pair, label) for pair, label in utils.extractRelationsFromGoldEntities(docWithEntities)} #use if providing gold entites
@@ -105,7 +92,7 @@ def evaluate():
 
 if __name__ == "__main__":
     if "-test" in sys.argv:
-        test = utils.getGold("Test")
+        partition = utils.getGold("Test")
 
     if "-goldIgnore" in sys.argv:
         useGold = False

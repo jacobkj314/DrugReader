@@ -4,11 +4,7 @@ import pickle
 from sklearn.linear_model import LogisticRegression
 from numpy import ndarray, concatenate
 
-#load vectors
-golds: dict[str, list[ndarray]] = pickle.load(open("Phase3/vectors/gold", "rb"))
-negatives = pickle.load(open("Phase3/vectors/negative", "rb"))
-
-def classifier(ratio = 1.0):
+def classifier(ratio = 1.0, golds = pickle.load(open("Phase3/vectors/gold", "rb")), negatives = pickle.load(open("Phase3/vectors/negative", "rb"))):
     labels = list();data = ndarray((0,2103))#accumulators
     #train on gold vectors
     for label in golds:
@@ -16,7 +12,7 @@ def classifier(ratio = 1.0):
             data = concatenate((data, (vector,)))#append vector
             labels.append(label)
     #train on negative vectors
-    for vector in negatives[::int(49514/4311/ratio)]:
+    for vector in negatives[::int(len(negatives)/sum((len(golds[label]) for label in golds))/ratio)]:
         data = concatenate((data, (vector,)))#append vector
         labels.append("none")
     model = LogisticRegression(tol = 0.1, random_state=69, solver='sag', verbose=1, n_jobs=-1)
