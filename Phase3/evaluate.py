@@ -1,9 +1,11 @@
 ###This is the evaluation code for my CS6390 Phase II submission, Spring 2022
 ###Usage: python3 evaluate.py  [-test (to use testset data rather than devset data)] [-goldIgnore (to use spaCy-predicted entity mentions)] [-mclass OR -mbin OR -mbinResolve OR -pipe (to select classifier layout)]
 
-import utils
 import sys
 import pickle
+import utils
+import classifier
+import vectors
 
 def evaluate(partition = pickle.load(open("Dev/DEV", "rb")), useGold = True, classifier = utils.classifier):
     #overwrite which classifier to use for this session
@@ -86,15 +88,49 @@ def evaluate(partition = pickle.load(open("Dev/DEV", "rb")), useGold = True, cla
     intF = (2*intPrecision*intRecall)/(intPrecision + intRecall) if (intPrecision + intRecall) != 0 else 0
     totalF = (2*totalPrecision*totalRecall)/(totalPrecision + totalRecall) if (totalPrecision + totalRecall) != 0 else 0
 
-    
-    print("\tmechP\tmechR\tmechF\teffP\teffR\teffF\tadvP\tadvR\tadvF\tintP\tintR\tintF\ttotP\ttotR\ttotF")
-    print(f"S:\t\t{mechanismPrecision}\t\t{mechanismRecall}\t\t{mechanismF}\t\t{effectPrecision}\t\t{effectRecall}\t\t{effectF}\t\t{advisePrecision}\t\t{adviseRecall}\t\t{adviseF}\t\t{intPrecision}\t\t{intRecall}\t\t{intF}\t\t{totalPrecision}\t\t{totalRecall}\t\t{totalF}")
+    return (mechanismPrecision, mechanismRecall, mechanismF, effectPrecision, effectRecall, effectF, advisePrecision, adviseRecall, adviseF, intPrecision, intRecall, intF, totalPrecision, totalRecall, totalF)
 
 if __name__ == "__main__":
-    if "-test" in sys.argv:
-        partition = utils.getGold("Test")
-
     if "-goldIgnore" in sys.argv:
         useGold = False
 
-    evaluate()
+    results = list()
+
+    if "-test" in sys.argv:
+        partition = utils.getGold("Test")
+    else:
+        print("mechP\tmechR\tmechF\teffP\teffR\teffF\tadvP\tadvR\tadvF\tintP\tintR\tintF\ttotP\ttotR\ttotF")
+        file = open("Phase3/devResults.csv", "w")
+        file.write("mechP,\tmechR,\tmechF,\teffP,\teffR,\teffF,\tadvP,\tadvR,\tadvF,\tintP,\tintR,\tintF,\ttotP,\ttotR,\ttotF,\tfeatures\n")    
+        file.close()
+
+        for featureSet in ([(i & (2 ** j)) != 0 for j in range(8)] for i in range(1, 2**8)):
+            utils.features = featureSet
+
+            data = pickle.load(open("crossValidate", "rb"))[:800]
+            g, n = vectors.extract(data)
+
+            c = classifier.classifier(1, g, n)
+            result = evaluate(classifier = c, partition=pickle.load(open("devFinal", "rb")))
+            results.append((result, featureSet))
+            
+            for r in result:
+                print(r, end = "\t")
+            print(featureSet)
+
+            file = open("Phase3/devResults.csv", "a")
+            for r in result:
+                file.write(str(r) + ",\t")
+            file.write(str(featureSet) + "\n")
+            file.close()
+
+    results.sort(key = lambda x : x[0][-1], reverse = True)
+
+
+    file = open("Phase3/devResultsSorted.csv", "w")
+    file.write("mechP,\tmechR,\tmechF,\teffP,\teffR,\teffF,\tadvP,\tadvR,\tadvF,\tintP,\tintR,\tintF,\ttotP,\ttotR,\ttotF,\tfeatures\n")    
+    for result, f in results:
+        for r in result:
+            file.write(str(r) + ",\t")
+        file.write(str(f) + "\n")
+    file.close()

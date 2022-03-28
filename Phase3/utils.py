@@ -9,12 +9,13 @@ from sklearn.linear_model import LogisticRegression
 #models
 ner: Language = pickle.load(open("NER", "rb")) 
 nlp = ner #call it nlp when I am using it just for syntax
-classifier = pickle.load(open("Phase3/classifier", "rb"))
+classifier: LogisticRegression = pickle.load(open("Phase3/classifier", "rb"))
 
 #vectors
 dependencyVectors = pickle.load(open("Phase3/vectors/dependencyVectors", "rb"))
 
-
+#vector features
+features = [True, True, True, True, True, True, True, True]
 
 def extractRelations(docText: str) -> list[tuple[str, str, str, int]]:#TODO fix this to work like extractRelationsFromGoldEntities
     #the document is passed into the spacy model to extract drug entities
@@ -100,15 +101,15 @@ def pattern(first: Span, second: Span):
         pointer = pointer.head; height += 1
         dep1 += height/path1len * dependencyVectors[pointer.dep_]
     #calculate second side
-    path2 = array([0 for _ in range(300)])
-    dep2 =  array([0 for _ in range(600)])
+    path2 = array([0.0 for _ in range(300)])
+    dep2 =  array([0.0 for _ in range(600)])
     pointer = second.root; height = 0
     while pointer != peak and pointer.head != peak:
-        path1 += height/path2len * pointer.vector
+        path2 += height/path2len * pointer.vector
         pointer = pointer.head; height += 1
-        dep1 += height/path2len * dependencyVectors[pointer.dep_]
+        dep2 += height/path2len * dependencyVectors[pointer.dep_]
 
-    return concatenate(([path1len], path1, dep1, peak.vector, dep2, path2, [path2len], [swapped]))
+    return concatenate(tuple((element for index, element in enumerate(([path1len], path1, dep1, peak.vector, dep2, path2, [path2len], [swapped])) if features[index])))#return only the features selected
 
 
 
