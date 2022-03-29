@@ -6,6 +6,8 @@ import pickle
 import utils
 import classifier
 import vectors
+from statistics import mean
+from numpy import concatenate
 
 def evaluate(partition = pickle.load(open("Dev/DEV", "rb")), useGold = True, classifier = utils.classifier):
     #overwrite which classifier to use for this session
@@ -65,6 +67,12 @@ def evaluate(partition = pickle.load(open("Dev/DEV", "rb")), useGold = True, cla
         adviseHits += len(actualAdvises.intersection(extractedAdvises))
         intHits += len(actualInts.intersection(extractedInts))
 
+    return (mechanismAnswers, effectAnswers, adviseAnswers, intAnswers, mechanismGuesses, effectGuesses, adviseGuesses, intGuesses, mechanismHits, effectHits, adviseHits, intHits)
+
+
+def analyze(results):
+    (mechanismAnswers, effectAnswers, adviseAnswers, intAnswers, mechanismGuesses, effectGuesses, adviseGuesses, intGuesses, mechanismHits, effectHits, adviseHits, intHits) = results
+
     #sentence-level evaluations:
     totalAnswers = mechanismAnswers + effectAnswers + adviseAnswers + intAnswers
     totalGuesses = mechanismGuesses + effectGuesses + adviseGuesses + intGuesses
@@ -90,6 +98,22 @@ def evaluate(partition = pickle.load(open("Dev/DEV", "rb")), useGold = True, cla
 
     return (mechanismPrecision, mechanismRecall, mechanismF, effectPrecision, effectRecall, effectF, advisePrecision, adviseRecall, adviseF, intPrecision, intRecall, intF, totalPrecision, totalRecall, totalF)
 
+
+
+#helper method for ablation testing
+boundaries = [0, 1, 301, 901, 1201, 1801, 2101, 2102, 2103]
+def project(vector, featureSet):
+    result = []
+    for i, feature in enumerate(featureSet):
+        if feature:
+            result = concatenate((result, vector[boundaries[i]:boundaries[i+1]]))
+    return result
+
+
+
+
+
+
 if __name__ == "__main__":
     if "-goldIgnore" in sys.argv:
         useGold = False
@@ -97,28 +121,52 @@ if __name__ == "__main__":
     results = list()
 
     if "-test" in sys.argv:
-        partition = utils.getGold("Test")
+        results = list()
+
+        data = pickle.load(open("crossValidate", "rb"))
+        for fold in range(5):
+            train = data[:200*fold] + data[200*(fold+1):]
+            test = data[200*fold:200*(fold+1)]
+
+            g, n = vectors.extract(train)
+            c = classifier.classifier(1, g, n)
+            results.append(evaluate(classifier = c, partition = test))
+        results = tuple((mean([results[result][parameter] for result in results]) for parameter in range(12)))
+            
+        results = analyze(results)
+
+        print("mechP\tmechR\tmechF\teffP\teffR\teffF\tadvP\tadvR\tadvF\tintP\tintR\tintF\ttotP\ttotR\ttotF")
+        for r in results:
+            print(r, end = "\t")
+
+
     else:
         print("mechP\tmechR\tmechF\teffP\teffR\teffF\tadvP\tadvR\tadvF\tintP\tintR\tintF\ttotP\ttotR\ttotF")
-        file = open("Phase3/devResults.csv", "w")
+        file = open("Phase3/devResults_1-75.csv", "w")
         file.write("mechP,\tmechR,\tmechF,\teffP,\teffR,\teffF,\tadvP,\tadvR,\tadvF,\tintP,\tintR,\tintF,\ttotP,\ttotR,\ttotF,\tfeatures\n")    
         file.close()
+            
+        data = pickle.load(open("crossValidate", "rb"))[:800]
+        gold, negative = vectors.extract(data)
 
         for featureSet in ([(i & (2 ** j)) != 0 for j in range(8)] for i in range(1, 2**8)):
             utils.features = featureSet
 
-            data = pickle.load(open("crossValidate", "rb"))[:800]
-            g, n = vectors.extract(data)
+            g = { label : [project(vector, featureSet) for vector in gold[label]] for label in gold}
+            n = [project(vector, featureSet) for vector in negative]
 
-            c = classifier.classifier(1, g, n)
-            result = evaluate(classifier = c, partition=pickle.load(open("devFinal", "rb")))
+            print(len(n))
+            print(len(n[0]))
+
+            c = classifier.classifier(1.75, g, n)
+            result = analyze(evaluate(classifier = c, partition=pickle.load(open("devFinal", "rb"))))
             results.append((result, featureSet))
             
             for r in result:
                 print(r, end = "\t")
             print(featureSet)
 
-            file = open("Phase3/devResults.csv", "a")
+            file = open("Phase3/devResults_1-75.csv", "a")
             for r in result:
                 file.write(str(r) + ",\t")
             file.write(str(featureSet) + "\n")
@@ -127,10 +175,14 @@ if __name__ == "__main__":
     results.sort(key = lambda x : x[0][-1], reverse = True)
 
 
-    file = open("Phase3/devResultsSorted.csv", "w")
+    file = open("Phase3/devResultsSorted_1-75.csv", "w")
     file.write("mechP,\tmechR,\tmechF,\teffP,\teffR,\teffF,\tadvP,\tadvR,\tadvF,\tintP,\tintR,\tintF,\ttotP,\ttotR,\ttotF,\tfeatures\n")    
     for result, f in results:
         for r in result:
             file.write(str(r) + ",\t")
         file.write(str(f) + "\n")
     file.close()
+
+
+
+
