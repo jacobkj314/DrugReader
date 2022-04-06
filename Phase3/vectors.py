@@ -3,9 +3,10 @@
 import pickle
 import spacy
 import re
-from utils import pattern, nlp
+from utils import pattern, nlp, toFilter
 
 def extract(docs = pickle.load(open("Train/TRAIN", "rb"))):
+
     #accumulators
     golds: dict[str, list] = dict()
     for label in ["mechanism", "effect", "advise", "int"]:
@@ -39,7 +40,7 @@ def extract(docs = pickle.load(open("Train/TRAIN", "rb"))):
             #extract NEGATIVE vectors
             interactions: list[tuple[int, int]] = [(one, two) for one, two, _ in interactions]
             for one in range(len(drugs)):
-                for two in range(len(drugs)):
+                for two in range(one+1, len(drugs)):
                     if one != two:
                         if (one, two) not in interactions:
                             #some entities are parsed by spacy into different word boundaries. This check makes sure that we extract gold patterns from entities that spacy can detect
@@ -52,6 +53,7 @@ def extract(docs = pickle.load(open("Train/TRAIN", "rb"))):
                                     sentence = s
                                     break
                             if sentence is not None:#we can extract!
+                                #print("NEGATIVE")
                                 vector = pattern(drug[one], drug[two])
                                 negatives.append(vector)
     return golds, negatives

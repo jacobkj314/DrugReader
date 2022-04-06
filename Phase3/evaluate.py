@@ -6,6 +6,7 @@ import pickle
 import utils
 import classifier
 import vectors
+import filter
 from statistics import mean
 from numpy import concatenate
 
@@ -101,7 +102,7 @@ def analyze(results):
 
 
 #helper method for ablation testing
-boundaries = [0, 1, 301, 901, 1201, 1801, 2101, 2102, 2103]
+boundaries = [0, 1, 301, 901, 1201, 1801, 2101, 2102, 2103, 2104, 2404, 2704, 3304, 3305]
 def project(vector, featureSet):
     result = []
     for i, feature in enumerate(featureSet):
@@ -114,7 +115,11 @@ def project(vector, featureSet):
 
 
 
-if __name__ == "__main__":
+
+
+
+
+def main():
     if "-goldIgnore" in sys.argv:
         useGold = False
 
@@ -128,12 +133,13 @@ if __name__ == "__main__":
             train = data[:200*fold] + data[200*(fold+1):]
             test = data[200*fold:200*(fold+1)]
 
-            g, n = vectors.extract(train)
-            c = classifier.classifier(1, g, n)
-            results.append(evaluate(classifier = c, partition = test))
-        results = tuple((mean([results[result][parameter] for result in results]) for parameter in range(12)))
+            utils.vectorizer, utils.filter = filter.filter(train)#train filter
+            g, n = vectors.extract(train)#extract vectors from train
+            c = classifier.classifier(1, g, n)#build classifier from train vectors
+            results.append(evaluate(classifier = c, partition = test))#evaluate on test partition
+        results = tuple((mean([results[result][parameter] for result in results]) for parameter in range(12)))#average results
             
-        results = analyze(results)
+        results = analyze(results)#analyze results
 
         print("mechP\tmechR\tmechF\teffP\teffR\teffF\tadvP\tadvR\tadvF\tintP\tintR\tintF\ttotP\ttotR\ttotF")
         for r in results:
@@ -142,14 +148,18 @@ if __name__ == "__main__":
 
     else:
         print("mechP\tmechR\tmechF\teffP\teffR\teffF\tadvP\tadvR\tadvF\tintP\tintR\tintF\ttotP\ttotR\ttotF")
-        file = open("Phase3/devResults_1-75.csv", "w")
+        file = open(f"Phase3/devResults.csv", "w")
         file.write("mechP,\tmechR,\tmechF,\teffP,\teffR,\teffF,\tadvP,\tadvR,\tadvF,\tintP,\tintR,\tintF,\ttotP,\ttotR,\ttotF,\tfeatures\n")    
         file.close()
             
         data = pickle.load(open("crossValidate", "rb"))[:800]
+        utils.toFilter = False
         gold, negative = vectors.extract(data)
+        utils.toFilter = True
 
-        for featureSet in ([(i & (2 ** j)) != 0 for j in range(8)] for i in range(1, 2**8)):
+        for featureSet in ([(i & (2 ** j)) != 0 for j in range(13)] for i in range(1, 2**13)):
+        #for _ in range(1):# #remove
+            #featureSet = [True, True, True, True, True, True, True, True, True, True, True, True, True]# # remove
             utils.features = featureSet
 
             g = { label : [project(vector, featureSet) for vector in gold[label]] for label in gold}
@@ -158,7 +168,7 @@ if __name__ == "__main__":
             print(len(n))
             print(len(n[0]))
 
-            c = classifier.classifier(1.75, g, n)
+            c = classifier.classifier(1, g, n)
             result = analyze(evaluate(classifier = c, partition=pickle.load(open("devFinal", "rb"))))
             results.append((result, featureSet))
             
@@ -166,7 +176,7 @@ if __name__ == "__main__":
                 print(r, end = "\t")
             print(featureSet)
 
-            file = open("Phase3/devResults_1-75.csv", "a")
+            file = open(f"Phase3/devResults.csv", "a")
             for r in result:
                 file.write(str(r) + ",\t")
             file.write(str(featureSet) + "\n")
@@ -175,7 +185,7 @@ if __name__ == "__main__":
     results.sort(key = lambda x : x[0][-1], reverse = True)
 
 
-    file = open("Phase3/devResultsSorted_1-75.csv", "w")
+    file = open(f"Phase3/devResultsSorted.csv", "w")
     file.write("mechP,\tmechR,\tmechF,\teffP,\teffR,\teffF,\tadvP,\tadvR,\tadvF,\tintP,\tintR,\tintF,\ttotP,\ttotR,\ttotF,\tfeatures\n")    
     for result, f in results:
         for r in result:
@@ -186,3 +196,6 @@ if __name__ == "__main__":
 
 
 
+
+if __name__ == "__main__":
+    main()

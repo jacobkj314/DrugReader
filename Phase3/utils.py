@@ -5,17 +5,26 @@ from spacy.tokens.span import Span
 from numpy import ndarray, array, concatenate
 from pandas import DataFrame
 from sklearn.linear_model import LogisticRegression
+from sklearn.feature_extraction import DictVectorizer
+
 
 #models
 ner: Language = pickle.load(open("NER", "rb")) 
 nlp = ner #call it nlp when I am using it just for syntax
 classifier: LogisticRegression = pickle.load(open("Phase3/classifier", "rb"))
+vectorizer: DictVectorizer; filter: LogisticRegression
+vectorizer, filter = pickle.load(open("crossFilter", "rb"))
+
 
 #vectors
 dependencyVectors = pickle.load(open("Phase3/vectors/dependencyVectors", "rb"))
 
 #vector features
-features = [True, True, True, True, True, True, True, True]
+features = [True, True, True, True, True, True, True, True, True, True, True, True, True]
+
+#other parameters
+swap = False
+toFilter = True
 
 def extractRelations(docText: str) -> list[tuple[str, str, str, int]]:#TODO fix this to work like extractRelationsFromGoldEntities
     #the document is passed into the spacy model to extract drug entities
@@ -73,57 +82,111 @@ def extractRelationsFromGoldEntities(doc: list[tuple[str, list[tuple[int, int, s
 def pattern(first: Span, second: Span):
     #I'm trying to standardize the vectors for paths between entities, so I'm going to put the earlier one alphabetically first, so that all paths between pairs of the same entities can be meaningfully compared
     swapped = 0
-    if first.text.lower() > second.text.lower():
-        temp = first; first = second; second = temp
-        swapped = 1
+    if swap:
+        if first.text.lower() > second.text.lower():
+            temp = first; first = second; second = temp
+            swapped = 1
     #find peak
     peak = None
-    pointer1 = first.root; path1len = 0#initialize left side of path
+    pointer1 = first.root #initialize left side of path
     while peak is None: #wait to find a "lowest common dependency ancestor"
-        pointer2 = second.root; path2len = 0#initialize right side of path
+        pointer2 = second.root#initialize right side of path
         while peak is None:
             if pointer1 == pointer2:#when they line up
                 peak = pointer1#that's the peak
             if pointer2.head == pointer2:
                 break
-            pointer2 = pointer2.head; path2len += 1 #otherwise, iterate right
+            pointer2 = pointer2.head #otherwise, iterate right
         if pointer1.head == pointer1:
             break
-        pointer1 = pointer1.head; path1len += 1 #iterate left
+        pointer1 = pointer1.head #iterate left
     if peak is None:
         raise Exception("No dependency peak found!")
-    #calculate first side
-    path1 = array([0.0 for _ in range(300)])
-    dep1 =  array([0.0 for _ in range(600)])
-    pointer = first.root; height = 0
-    while pointer != peak and pointer.head != peak:
-        path1 += height/path1len * pointer.vector
-        pointer = pointer.head; height += 1
-        dep1 += height/path1len * dependencyVectors[pointer.dep_]
+    path = list()
+    #calculate first side of path
+    pointer = first.root
+    while True:
+        if pointer == peak:
+            peak = len(path)
+            path.append(pointer)
+            break
+        elif pointer == first.root:
+            path.append(pointer.dep_)
+        else:#somewhere in between
+            path.append(pointer)
+            path.append(pointer.dep_)
+        pointer = pointer.head
     #calculate second side
-    path2 = array([0.0 for _ in range(300)])
-    dep2 =  array([0.0 for _ in range(600)])
-    pointer = second.root; height = 0
-    while pointer != peak and pointer.head != peak:
-        path2 += height/path2len * pointer.vector
-        pointer = pointer.head; height += 1
-        dep2 += height/path2len * dependencyVectors[pointer.dep_]
+    pointer = second.root
+    while True:
+        if pointer == path[peak]:
+            break
+        elif pointer == second.root:
+            path.insert(peak+1, pointer.dep_)
+        else:
+            path.insert(peak+1, pointer)
+            path.insert(peak+1, pointer.dep_)
+        pointer = pointer.head
 
-    return concatenate(tuple((element for index, element in enumerate(([path1len], path1, dep1, peak.vector, dep2, path2, [path2len], [swapped])) if features[index])))#return only the features selected
+    #new cross-branch filter
+    if toFilter:
+        if peak != 0 and peak != len(path) -1:
+            pair = DataFrame([(path[peak-1], path[peak+1])]).to_dict().values()
+            pair = vectorizer.transform(pair)
+            filterVerdict = filter.predict(pair)[0]
+            if filterVerdict == "bad":
+                return None
 
+    path1, dep1, peak, dep2, path2 = path[1:peak:2], path[0:peak:2], path[peak], path[-1:peak:-2], path[-2:peak:-2]
+
+    path1len = len(path1)
+    path2len = len(path2)
+
+    #print(first.sent)
+    #print(first, path1, peak, path2, second)
+    #print(dep1, dep2)
+    #input()
+
+    #get contexts between entities
+    path1 = sum([e.vector * (i+1)/(len(path1)+1) for i, e in enumerate(path1)]) if len(path1) > 0 else array([0.0 for _ in range(300)])
+    dep1 = sum([dependencyVectors[e] * (i+1)/(len(dep1)) for i, e in enumerate(dep1)]) if len(dep1) > 0 else array([0.0 for _ in range(600)])
+    path2 = sum([e.vector * (i+1)/(len(path2)+1) for i, e in enumerate(path2)]) if len(path2) > 0 else array([0.0 for _ in range(300)])
+    dep2 = sum([dependencyVectors[e] * (i+1)/(len(dep2)) for i, e in enumerate(dep2)]) if len(dep2) > 0 else array([0.0 for _ in range(600)])
+
+    rootPath = list()
+    rootDep = list()
+    pointer = peak
+    while True:
+        if pointer == first.sent.root:
+            break
+        elif pointer == peak:
+            rootDep.append(pointer.dep_)
+        else:
+            rootPath.append(pointer)
+            rootDep.append(pointer.dep_)
+        pointer = pointer.head
+    rootPath = sum([e.vector * (i+1)/(len(rootPath)+1) for i, e in enumerate(rootPath)]) if len(rootPath) > 0 else array([0.0 for _ in range(300)])
+    rootDep = sum([dependencyVectors[e] * (i+1)/(len(rootDep)) for i, e in enumerate(rootDep)]) if len(rootDep) > 0 else array([0.0 for _ in range(600)])
+
+
+
+    v = concatenate(tuple((element for index, element in enumerate(([path1len], path1, dep1, peak.vector, dep2, path2, [path2len], [swapped], [second.root.i - first.root.i], first.sent.root.vector, rootPath, rootDep, [len(rootPath)])) if features[index])))#return only the features selected
+    #print(len(v))
+    return v
 
 
 
 
 def classify(vectors: set[DataFrame]):
-    predictions = [classifier.predict([vector])[0] for vector in vectors]#get all predictions
+    predictions = [classifier.predict([vector])[0] for vector in vectors if vector is not None]#get all predictions
     predictions = [(predictions.count(prediction), prediction) for prediction in set(predictions)]#find how common each is
     predictions.sort(key = lambda x : -x[0])#sort
     predictions = [prediction[1] for prediction in predictions if prediction[0] == predictions[0][0]]#keep only the most common predictions
-    if predictions[0] == "none":
-        del predictions[0]
-    if len(predictions) == 1 or len(predictions) == 2 and predictions[1] == "none":#if there is only a single most predicted prediction that isn't "none"
-        return predictions[0]#return it
+    if len(predictions) > 0:
+        if predictions[0] == "none":
+            del predictions[0]
+        if len(predictions) == 1 or len(predictions) == 2 and predictions[1] == "none":#if there is only a single most predicted prediction that isn't "none"
+            return predictions[0]#return it
 
 
 
