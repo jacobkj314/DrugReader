@@ -1,4 +1,5 @@
-#This python script trains the binary filter classifier on extracted extracted dependencies using sklearn. Written by Jacob Johnson for CS6390 at the University of Utah, Spring 2022.
+#This python script trains the binary filter classifier on extracted extracted dependencies using sklearn.
+# Written by Jacob Johnson for CS6390 at the University of Utah, Spring 2022.
 # It is modified from the classifier training script that Lindsay Wilde and I wrote for the final project last semester in CS5340, which in turn was based on the classifier script for the third programming assignment in that class
 import pickle
 import re

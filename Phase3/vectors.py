@@ -1,4 +1,5 @@
 #this code extracts vectors from training documents to be used with my system
+#used for my Phase III submission on the semester project in CS6390 at the University of Utah, Spring 2022
 
 import pickle
 import spacy

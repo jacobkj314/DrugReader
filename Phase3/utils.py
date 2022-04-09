@@ -1,3 +1,7 @@
+#This is the main extraction script for my Phase III submission for the CS6390 semester project
+#Spring 2022, University of Utah
+#coded by Jacob Johnson
+
 import pickle
 import spacy
 from spacy.language import Language
@@ -9,18 +13,18 @@ from sklearn.feature_extraction import DictVectorizer
 
 
 #models
-ner: Language = pickle.load(open("NER", "rb")) 
+ner: Language = pickle.load(open("../NER", "rb")) 
 nlp = ner #call it nlp when I am using it just for syntax
-classifier: LogisticRegression = pickle.load(open("Phase3/classifier", "rb"))
+classifier: LogisticRegression = pickle.load(open("models/default", "rb"))
 vectorizer: DictVectorizer; filter: LogisticRegression
-vectorizer, filter = pickle.load(open("crossFilter", "rb"))
+vectorizer, filter = pickle.load(open("models/crossFilter", "rb"))
 
 
 #vectors
-dependencyVectors = pickle.load(open("Phase3/vectors/dependencyVectors", "rb"))
+dependencyVectors = pickle.load(open("vectors/dependencyVectors", "rb"))
 
 #vector features
-features = [True, True, True, True, True, True, True, True, True, True, True, True, True]
+features = [True, True, True, True, False, True, True, False, False, True, True, True, False]#using "dev" featureSet
 
 #other parameters
 swap = False

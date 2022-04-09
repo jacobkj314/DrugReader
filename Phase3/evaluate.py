@@ -1,5 +1,5 @@
-###This is the evaluation code for my CS6390 Phase II submission, Spring 2022
-###Usage: python3 evaluate.py  [-test (to use testset data rather than devset data)] [-goldIgnore (to use spaCy-predicted entity mentions)] [-mclass OR -mbin OR -mbinResolve OR -pipe (to select classifier layout)]
+###This is the evaluation code for my CS6390 Phase III submission, Spring 2022
+###Usage: python3 evaluate.py  [-test (to use testset data rather than getting an exhaustive ablation on the devset data)] [-goldIgnore (to use spaCy-predicted entity mentions)] [<space-separated feature values>]
 
 import sys
 import pickle
