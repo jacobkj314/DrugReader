@@ -5,7 +5,7 @@ import spacy
 import re
 from utils import pattern, nlp, toFilter
 
-def extract(docs = pickle.load(open("Train/TRAIN", "rb"))):
+def extract(docs):
 
     #accumulators
     golds: dict[str, list] = dict()
@@ -34,7 +34,8 @@ def extract(docs = pickle.load(open("Train/TRAIN", "rb"))):
                         break
                 if sentence is not None:#we can extract!
                     vector = pattern(drug[one], drug[two])
-                    golds[label].append(vector)
+                    if vector is not None:
+                        golds[label].append(vector)
 
 
             #extract NEGATIVE vectors
@@ -55,7 +56,8 @@ def extract(docs = pickle.load(open("Train/TRAIN", "rb"))):
                             if sentence is not None:#we can extract!
                                 #print("NEGATIVE")
                                 vector = pattern(drug[one], drug[two])
-                                negatives.append(vector)
+                                if vector is not None:
+                                    negatives.append(vector)
     return golds, negatives
 
 if __name__ == "__main__":

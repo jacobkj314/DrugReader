@@ -10,7 +10,7 @@ import filter
 from statistics import mean
 from numpy import concatenate
 
-def evaluate(partition = pickle.load(open("Dev/DEV", "rb")), useGold = True, classifier = utils.classifier):
+def evaluate(partition, useGold, classifier):
     #overwrite which classifier to use for this session
     utils.classifier = classifier
 
@@ -120,12 +120,17 @@ def project(vector, featureSet):
 
 
 def main():
-    if "-goldIgnore" in sys.argv:
-        useGold = False
 
     results = list()
 
     if "-test" in sys.argv:
+        #allow the user to select which features are used
+        featureList = ["path1len", "path1", "dep1", "peak", "dep2", "path2", "path2len", "swapped", "surfdist", "root", "rootPath", "rootDep", "rootLen"]
+        utils.features = [True if f in sys.argv else False for f in featureList]
+        if utils.features == [False for _ in range(13)]:
+            utils.features = [True for _ in range(13)]
+
+
         results = list()
 
         data = pickle.load(open("crossValidate", "rb"))
@@ -136,9 +141,13 @@ def main():
             utils.vectorizer, utils.filter = filter.filter(train)#train filter
             g, n = vectors.extract(train)#extract vectors from train
             c = classifier.classifier(1, g, n)#build classifier from train vectors
-            results.append(evaluate(classifier = c, partition = test))#evaluate on test partition
-        results = tuple((mean([results[result][parameter] for result in results]) for parameter in range(12)))#average results
-            
+            results.append(evaluate(classifier = c, useGold = False if "-goldIgnore" in sys.argv else True, partition = test))#evaluate on test partition
+        
+        for result in results: 
+            print(result)
+        
+        results = tuple((sum([row[col] for row in results]) for col in range(12)))#aggregate results from folds
+
         results = analyze(results)#analyze results
 
         print("mechP\tmechR\tmechF\teffP\teffR\teffF\tadvP\tadvR\tadvF\tintP\tintR\tintF\ttotP\ttotR\ttotF")
@@ -146,7 +155,7 @@ def main():
             print(r, end = "\t")
 
 
-    else:
+    else:#ablation test with devset
         print("mechP\tmechR\tmechF\teffP\teffR\teffF\tadvP\tadvR\tadvF\tintP\tintR\tintF\ttotP\ttotR\ttotF")
         file = open(f"Phase3/devResults.csv", "w")
         file.write("mechP,\tmechR,\tmechF,\teffP,\teffR,\teffF,\tadvP,\tadvR,\tadvF,\tintP,\tintR,\tintF,\ttotP,\ttotR,\ttotF,\tfeatures\n")    
@@ -182,16 +191,16 @@ def main():
             file.write(str(featureSet) + "\n")
             file.close()
 
-    results.sort(key = lambda x : x[0][-1], reverse = True)
+        results.sort(key = lambda x : x[0][-1], reverse = True)
 
 
-    file = open(f"Phase3/devResultsSorted.csv", "w")
-    file.write("mechP,\tmechR,\tmechF,\teffP,\teffR,\teffF,\tadvP,\tadvR,\tadvF,\tintP,\tintR,\tintF,\ttotP,\ttotR,\ttotF,\tfeatures\n")    
-    for result, f in results:
-        for r in result:
-            file.write(str(r) + ",\t")
-        file.write(str(f) + "\n")
-    file.close()
+        file = open(f"Phase3/devResultsSorted.csv", "w")
+        file.write("mechP,\tmechR,\tmechF,\teffP,\teffR,\teffF,\tadvP,\tadvR,\tadvF,\tintP,\tintR,\tintF,\ttotP,\ttotR,\ttotF,\tfeatures\n")    
+        for result, f in results:
+            for r in result:
+                file.write(str(r) + ",\t")
+            file.write(str(f) + "\n")
+        file.close()
 
 
 

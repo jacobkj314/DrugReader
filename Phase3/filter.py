@@ -60,8 +60,8 @@ def filter(docs = pickle.load(open("Train/TRAIN", "rb"))):
 
     bad = [b for b in bad if b not in good]#restrict bad contexts to those that have never been good
     good = list(good)
+
     print(len(good), len(bad))
-    input()
 
     train = good + bad
     labels = ["good" for g in good] + ["bad" for b in bad]

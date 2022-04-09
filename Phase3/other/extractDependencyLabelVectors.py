@@ -1,3 +1,4 @@
+#this is the script that I used to extract the embedding-like vectors to represent dependency labels to my classifier
 import pickle
 import spacy
 from sklearn.linear_model import LogisticRegression
